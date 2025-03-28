@@ -23,7 +23,7 @@ RivaBrowser is a lightweight console-based web browser written in Python, design
 
 ### Installation
 ```bash
-git clone https://github.com/yourusername/RivaBrowser.git
+git clone https://github.com/nukri060/simple-web-browser.git
 cd RivaBrowser
 pip install -e .
 ```
