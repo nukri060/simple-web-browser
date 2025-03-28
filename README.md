@@ -6,9 +6,9 @@
 
 <img src="assets/protocol-flow.gif" width="600" alt="Protocol visualization demo">
 
-## Where Command Line Meets Browser Innovation
-
 RivaBrowser is **a living project** that starts as a terminal-based web client but aspires to become a full educational browser platform. It's built for those who believe understanding the web shouldn't require reverse-engineering billion-dollar browsers.
+
+## Where Command Line Meets Browser Innovation
 
 ```python
 # Today's reality
@@ -18,6 +18,7 @@ response = request("https://example.com")  # Returns plain text
 # Tomorrow's possibilities? Your call:
 def render_modern_web(url):
     return WebGPU_engine(url)  # Maybe someday?
+```
 
 ## ✨ Features
 
