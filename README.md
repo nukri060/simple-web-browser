@@ -6,9 +6,9 @@
 
 <img src="assets/protocol-flow.gif" width="600" alt="Protocol visualization demo">
 
-RivaBrowser is **a living project** that starts as a terminal-based web client but aspires to become a full educational browser platform. It's built for those who believe understanding the web shouldn't require reverse-engineering billion-dollar browsers.
-
 ## Where Command Line Meets Browser Innovation
+
+RivaBrowser is **a living project** that starts as a terminal-based web client but aspires to become a full educational browser platform. It's built for those who believe understanding the web shouldn't require reverse-engineering billion-dollar browsers.
 
 ```python
 # Today's reality
@@ -33,16 +33,16 @@ def render_modern_web(url):
 
 ## 🚀 Quick Start
 
-### Installation
-```bash
-git clone https://github.com/nukri060/simple-web-browser.git
-cd RivaBrowser
-pip install -e .
-```
-
 ### Command Line Usage
 ```bash
-riva "https://example.com"
+# Clone repository
+git clone https://github.com/nukri060/simple-web-browser.git
+
+# Navigate to project directory
+cd simple-web-browser/RivaBrowser
+
+# Run the browser
+python -m riva "https://example.com"
 ```
 
 ### Python Module
