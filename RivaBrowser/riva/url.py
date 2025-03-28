@@ -143,7 +143,7 @@ class URL:
         request = f"GET {self.path} HTTP/1.1\r\n"
         request += f"Host: {self.host}\r\n"
         request += "Connection: keep-alive\r\n"
-        request += "User-Agent: myFirstBrowser\r\n"
+        request += "User-Agent: RivaBrowser 1.0\r\n"
         request += "\r\n"
         sock.send(request.encode("utf8"))
 
