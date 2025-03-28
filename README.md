@@ -1,12 +1,23 @@
-# RivaBrowser
+# RivaBrowser  
+**From Terminal to Tomorrow: A Browser Engine in Evolution**  
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue)](https://python.org) 
+[![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+<img src="assets/protocol-flow.gif" width="600" alt="Protocol visualization demo">
 
-<img src="assets/logo.png" width="150" align="right">
+## Where Command Line Meets Browser Innovation
 
-RivaBrowser is a lightweight console-based web browser written in Python, designed as an educational platform for understanding web protocols and browser internals.
+RivaBrowser is **a living project** that starts as a terminal-based web client but aspires to become a full educational browser platform. It's built for those who believe understanding the web shouldn't require reverse-engineering billion-dollar browsers.
+
+```python
+# Today's reality
+from rivabrowser import request
+response = request("https://example.com")  # Returns plain text
+
+# Tomorrow's possibilities? Your call:
+def render_modern_web(url):
+    return WebGPU_engine(url)  # Maybe someday?
 
 ## ✨ Features
 
