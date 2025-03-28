@@ -1,38 +1,47 @@
-def show(body):
-    # Displaying the response body, replacing HTML entities with proper characters.
-    if body.startswith("HTTP/") or body.startswith("File not found") or body.startswith("Path is a directory") or body.startswith("Permission denied") or body.startswith("Error reading file"):
+import re
+from html import unescape
+from typing import Union
+
+def show(body: str) -> None:
+    """
+    Render response body with HTML entity decoding and basic tag stripping.
+    Preserves special cases like HTTP responses and file operation messages.
+    
+    Args:
+        body: Response content to display (HTTP response, HTML or plain text)
+    """
+    # Check for non-HTML responses that should be printed as-is
+    if any(body.startswith(prefix) for prefix in (
+        "HTTP/", "File not found", "Path is a directory",
+        "Permission denied", "Error reading file"
+    )):
         print(body)
         return
-        
-    in_tag = False
-    i = 0
-    n = len(body)
-    while i < n:
-        c = body[i]
-        if c == "&":
-            # Handling HTML entities like &lt; and &gt; for proper output.
-            if body.startswith("&lt;", i):
-                print("<", end="")
-                i += 4
-            elif body.startswith("&gt;", i):
-                print(">", end="")
-                i += 4
-            else:
-                print(c, end="")
-                i += 1
-        elif c == "<":
-            in_tag = True
-            i += 1
-        elif c == ">":
-            in_tag = False
-            i += 1
-        elif not in_tag:
-            print(c, end="")
-            i += 1
-        else:
-            i += 1
+    
+    # Decode HTML entities (faster and more complete than manual handling)
+    decoded_body = unescape(body)
+    
+    # Basic HTML tag stripping while preserving content
+    clean_body = re.sub(r'<[^>]*>', '', decoded_body)
+    
+    # Normalize whitespace and print
+    normalized_body = ' '.join(clean_body.split())
+    print(normalized_body)
 
-def load(url):
-    # Requesting and displaying the body content of a given URL.
-    body = url.request()
-    show(body)
+def load(url: Union[str, 'URL']) -> None:
+    """
+    Load and display content from a URL object or URL string.
+    Maintains compatibility with the existing URL class.
+    
+    Args:
+        url: Either a URL object or string representation of URL
+    """
+    from .url import URL  # Local import to avoid circular dependencies
+    
+    try:
+        # Handle both string URLs and URL objects
+        url_obj = URL(url) if isinstance(url, str) else url
+        body = url_obj.request()
+        show(body)
+    except Exception as e:
+        print(f"Error loading URL: {str(e)}")
