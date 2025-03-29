@@ -18,7 +18,7 @@ def main():
             # Print first 200 chars of response
             print(body[:200] + ("..." if len(body) > 200 else ""))
             
-            # Show cache status (исправленная версия)
+            # Show cache status
             print("\nConnection cache contents:")
             for (host, port, scheme), (sock, _) in connection_cache.cache.items():
                 try:

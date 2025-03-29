@@ -3,6 +3,16 @@ import time
 
 class ConnectionCache:
     CONNECTION_TIMEOUT = 30  # seconds
+    MAX_POOL_SIZE = 5  
+    
+    def store(self, host, port, scheme, sock):
+        if len(self.cache) >= self.MAX_POOL_SIZE:
+            self._remove_oldest()  # Нужно реализовать
+        self.cache[(host, port, scheme)] = (sock, time.time())
+    
+    def _remove_oldest(self):
+        oldest = min(self.cache.items(), key=lambda x: x[1][1])[0]
+        self._remove_connection(oldest)
     
     def __init__(self):
         self.cache = {}  # {(host,port,scheme): (socket, timestamp)}
