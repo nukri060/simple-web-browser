@@ -40,3 +40,5 @@ class ConnectionCache:
     def close_all(self):
         for key in list(self.cache.keys()):
             self._remove_connection(key)
+
+connection_cache = ConnectionCache()
