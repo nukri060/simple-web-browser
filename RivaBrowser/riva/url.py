@@ -2,11 +2,9 @@ import socket
 import ssl
 from urllib.parse import urlparse
 from .cache import connection_cache
-
-import socket
-import ssl
-from urllib.parse import urlparse
-from .cache import connection_cache
+import base64  # NEW
+import logging
+from colorama import Fore  # NEW
 
 class URL:
     SCHEME_PORTS = {
@@ -17,13 +15,14 @@ class URL:
         'view-source': None
     }
 
-    def __init__(self, url):
+    def __init__(self, url, user_agent=None):  # NEW: user_agent param
         self.original_url = url
         self.scheme = None
         self.host = None
         self.port = None
         self.path = None
         self.inner_url = None
+        self.user_agent = user_agent or "RivaBrowser/1.0"  # NEW
         self._parse_url(url)
 
     def _parse_url(self, url):
@@ -61,6 +60,12 @@ class URL:
 
     def _handle_http(self, url):
         """Process http/https URLs"""
+        if '@' in url:
+            # Extract auth part
+            auth_part, rest = url.split('@', 1)
+            self.auth = auth_part
+            url = rest
+        
         if '/' not in url:
             url += "/"
         parts = url.split("/", 1)
@@ -139,20 +144,36 @@ class URL:
     def _request_http(self, source_mode=False):
         sock = self._get_socket()
         
-        # Sending a basic HTTP GET request with necessary headers.
+        # NEW: Handle HTTP Basic Auth
+        auth_header = ""
+        if "@" in self.host:
+            auth_part, self.host = self.host.split("@", 1)
+            auth_header = f"Authorization: Basic {base64.b64encode(auth_part.encode()).decode()}\r\n"
+
         request = f"GET {self.path} HTTP/1.1\r\n"
         request += f"Host: {self.host}\r\n"
         request += "Connection: keep-alive\r\n"
-        request += "User-Agent: RivaBrowser 1.0\r\n"
+        request += f"User-Agent: {self.user_agent}\r\n"  # NEW: Dynamic User-Agent
+        request += auth_header  # NEW
         request += "\r\n"
-        sock.send(request.encode("utf8"))
-
-        # Reading the response in binary mode to ensure correct byte count.
-        response = sock.makefile("rb", newline="\r\n")
         
-        # Parsing the status line from the response.
+        try:
+            sock.send(request.encode("utf8"))
+        except Exception as e:
+            logging.error(f"Failed to send request: {e}")
+            raise
+
+        response = sock.makefile("rb", newline="\r\n")
         statusline = response.readline().decode('utf-8')
-        version, status, explanation = statusline.split(" ", 2)
+        
+        # NEW: Colorize HTTP errors
+        try:
+            version, status, explanation = statusline.split(" ", 2)
+            if int(status) >= 400:
+                logging.error(f"HTTP Error {status}: {explanation.strip()}")
+                print(Fore.RED + f"HTTP Error: {status} {explanation.strip()}")
+        except ValueError:
+            pass
 
         content_length = None
         connection_close = False

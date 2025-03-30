@@ -1,10 +1,11 @@
 import re
 from html import unescape
-from typing import Union, Optional
+from typing import Union, Optional, List
 from textwrap import shorten
 from datetime import datetime
 import colorama
 from colorama import Fore, Style
+import logging
 
 # Initialize colorama
 colorama.init()
@@ -15,54 +16,67 @@ class HTMLUtils:
         """Remove script and style tags from HTML"""
         html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.DOTALL)
         html = re.sub(r'<style\b[^>]*>.*?</style>', '', html, flags=re.DOTALL)
+        html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)  # NEW: Remove comments
         return html
 
     @staticmethod
-    def extract_links(html: str) -> list:
-        """Extract all href links from HTML"""
-        return re.findall(r'href=[\'"]?([^\'" >]+)', html)
+    def extract_links(html: str) -> List[str]:
+        """Extract all href links from HTML with validation"""
+        raw_links = re.findall(r'href=[\'"]?([^\'" >]+)', html)
+        return [link for link in raw_links if link and not link.startswith('#')]  # NEW: Filter invalid links
 
-def show(body: str, max_length: Optional[int] = None) -> None:
+def show(body: Union[str, bytes], max_length: Optional[int] = None) -> None:
     """
-    Render response body with enhanced formatting:
-    - Preserves technical messages
-    - Cleans HTML content
-    - Adds color output
-    - Optional length limiting
+    Enhanced content display with error handling and formatting
     
     Args:
-        body: Content to display
-        max_length: Optional max characters to display
+        body: Content to display (str or bytes)
+        max_length: Optional max characters to show
     """
-    # Check for non-HTML responses
-    if any(body.startswith(prefix) for prefix in (
+    # NEW: Handle bytes input
+    if isinstance(body, bytes):
+        try:
+            body = body.decode('utf-8')
+        except UnicodeDecodeError:
+            try:
+                body = body.decode('latin-1')
+            except Exception as e:
+                logging.error(f"Decoding failed: {e}")
+                body = "[Binary data]"
+
+    # NEW: Improved error detection
+    error_prefixes = (
         "HTTP/", "File not found", "Path is a directory",
-        "Permission denied", "Error reading file"
-    )):
-        print(Fore.YELLOW + body + Style.RESET_ALL)
+        "Permission denied", "Error reading file", "HTTP Error"
+    )
+    
+    if any(body.startswith(prefix) for prefix in error_prefixes):
+        color = Fore.RED if "Error" in body or "HTTP/" in body else Fore.YELLOW
+        print(color + body + Style.RESET_ALL)
         return
     
     try:
         # Enhanced HTML cleaning
         decoded = unescape(body)
         cleaned = HTMLUtils.strip_scripts(decoded)
-        text_only = re.sub(r'<[^>]*>', '', cleaned)
-        normalized = ' '.join(text_only.split())
+        text_only = re.sub(r'<[^>]*>', ' ', cleaned)  # NEW: Better tag removal
+        text_only = re.sub(r'\s+', ' ', text_only).strip()
         
-        # Apply length limit if specified
-        if max_length and len(normalized) > max_length:
-            normalized = shorten(normalized, width=max_length, placeholder="...")
+        # Apply length limit
+        if max_length and len(text_only) > max_length:
+            text_only = shorten(text_only, width=max_length, placeholder="...")
             
-        print(Fore.GREEN + normalized + Style.RESET_ALL)
+        print(Fore.GREEN + text_only + Style.RESET_ALL)
         
     except Exception as e:
+        logging.error(f"Content rendering failed: {e}")
         print(Fore.RED + f"Error rendering content: {str(e)}" + Style.RESET_ALL)
-        print(Fore.CYAN + "Raw content:" + Style.RESET_ALL)
+        print(Fore.CYAN + "Raw content preview:" + Style.RESET_ALL)
         print(body[:1000] + ("..." if len(body) > 1000 else ""))
 
 def load(url: Union[str, 'URL'], max_length: Optional[int] = None) -> None:
     """
-    Enhanced URL loader with error handling and logging
+    Enhanced URL loader with error handling
     
     Args:
         url: URL string or URL object
@@ -83,14 +97,15 @@ def load(url: Union[str, 'URL'], max_length: Optional[int] = None) -> None:
         print(Fore.MAGENTA + f"\nLoaded in {load_time:.2f} seconds" + Style.RESET_ALL)
         
     except Exception as e:
+        logging.error(f"Failed to load {url}: {e}")
         print(Fore.RED + f"\nError loading {url}: {str(e)}" + Style.RESET_ALL)
 
 def print_links(html: str) -> None:
-    """Extract and print all links from HTML"""
+    """Extract and print all valid links from HTML"""
     links = HTMLUtils.extract_links(html)
     if links:
         print(Fore.CYAN + "\nFound links:" + Style.RESET_ALL)
-        for i, link in enumerate(links[:10], 1):  # Show first 10 links
+        for i, link in enumerate(links[:15], 1):  # NEW: Show first 15 links
             print(f"{i}. {link}")
     else:
-        print(Fore.YELLOW + "No links found in content" + Style.RESET_ALL)
+        print(Fore.YELLOW + "No valid links found in content" + Style.RESET_ALL)
