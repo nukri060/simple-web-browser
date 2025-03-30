@@ -1,67 +1,95 @@
-# RivaBrowser  
-**From Terminal to Tomorrow: A Browser Engine in Evolution**  
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue)](https://python.org) 
-[![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
+# RivaBrowser
 
-<img src="assets/protocol-flow.gif" width="600" alt="Protocol visualization demo">
+## From Terminal to Tomorrow: A Browser Engine in Evolution
 
-## Where Command Line Meets Browser Innovation
+![Protocol visualization demo](assets/protocol-flow.gif)
 
-RivaBrowser is **a living project** that starts as a terminal-based web client but aspires to become a full educational browser platform. It's built for those who believe understanding the web shouldn't require reverse-engineering billion-dollar browsers.
+### Where Command Line Meets Browser Innovation
+
+RivaBrowser is a living project that starts as a terminal-based web client but aspires to become a full educational browser platform. It's built for those who believe understanding the web shouldn't require reverse-engineering billion-dollar browsers.
+
+## 🚀 Today's Reality
 
 ```python
-# Today's reality
 from rivabrowser import request
-response = request("https://example.com")  # Returns plain text
 
-# Tomorrow's possibilities? Your call:
+response = request("https://example.com")  # Returns plain text
+```
+
+## 🔮 Tomorrow's Possibilities?
+
+```python
 def render_modern_web(url):
     return WebGPU_engine(url)  # Maybe someday?
 ```
 
-## ✨ Features
+## ✨ Features (v1.2.0)
 
-- Modern protocol support (HTTP/1.1, HTTPS)
+- Modern protocol support: HTTP/1.1, HTTPS with SSL/TLS
 - Connection caching for faster loading
-- View page sources (`view-source:`)
-- `data:` URL handling
-- Local file browsing (`file://`)
+- Interactive commands: `!history`, `!save`, `!links`, `!stats`
+- URL scheme support:
+  - `http://` / `https://`
+  - `file://` (local files)
+  - `view-source:` (view page sources)
+  - `data:` URLs
+- HTTP Basic Authentication (`user:pass@site.com`)
+- Automatic encoding detection for international websites
 - Modular architecture for easy extension
-- SSL/TLS secure connections
 - HTML5 parsing support
+- Cache statistics and performance metrics
 
 ## 🚀 Quick Start
 
-### Command Line Usage
+### Installation
+
 ```bash
-# Clone repository
+# Install directly from GitHub
+pip install git+https://github.com/nukri060/simple-web-browser.git
+
+# Or clone and install locally
 git clone https://github.com/nukri060/simple-web-browser.git
+cd simple-web-browser
+pip install -e .
+```
 
-# Navigate to project directory
-cd simple-web-browser/RivaBrowser
+### Basic Usage
 
-# Run the browser
+```bash
+# Open a website
 python -m riva "https://example.com"
+
+# View page source
+python -m riva "view-source:https://example.com"
+
+# Open local file
+python -m riva "file:///path/to/file.html"
 ```
 
-### Python Module
-```python
-from riva import URL, load
+### Advanced Options
 
-# Advanced usage
-url = URL("https://example.com")
-response = url.request()
+```bash
+# With custom settings
+python -m riva "https://example.com" \
+  --timeout 10 \
+  --user-agent "MyCustomBrowser/1.0" \
+  --log-file browser.log
 
-# Simple usage
-load("https://example.com")
+# Show version
+python -m riva --version
+
+# View browsing history
+python -m riva --history
 ```
 
-## 🌟 Supported URL Schemes
-- `http://` / `https://`
-- `file://` (local files)
-- `view-source:`
-- `data:text/html,`
+## 🛠 Interactive Commands
+
+While browsing, use these commands:
+
+- `!history` - Show browsing history
+- `!save` - Save current page to `saved_page.html`
+- `!links` - Extract and display links from current page
+- `!stats` - Show cache statistics
 
 ## 🏗 Project Structure
 
@@ -69,17 +97,19 @@ load("https://example.com")
 RivaBrowser/
 ├── riva/                  # Core package
 │   ├── __init__.py        # Package definition
-│   ├── cache.py           # Connection manager
+│   ├── cache.py           # Connection manager with LRU caching
 │   ├── url.py             # URL parsing/request handling
-│   └── utils.py           # Utilities
+│   ├── utils.py           # Content display utilities
+│   └── cli.py             # Command line interface
 ├── tests/                 # Unit tests
 ├── main.py                # CLI entry point
 └── requirements.txt       # Dependencies
 ```
 
-## 🔧 Development
+## 🔧 For Developers
 
 ### Extending Functionality
+
 ```python
 from riva import URL
 
@@ -89,27 +119,45 @@ class CustomURL(URL):
         pass
 ```
 
+### Cache Configuration
+
+```python
+from riva.cache import ConnectionCache
+
+# Custom cache settings
+custom_cache = ConnectionCache(
+    timeout=120.0,      # 2 minute timeout
+    max_pool_size=20,   # Store 20 connections
+    enable_metrics=True # Track performance
+)
+```
+
 ### Running Tests
+
 ```bash
 python -m unittest discover tests
 ```
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow these steps:
+We welcome contributions! Please follow our guidelines:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -am 'Add awesome feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
+- Follow [PEP 8](https://peps.python.org/pep-0008/) style guidelines
+- Use type hints for all new code
+- Keep functions small and focused
+- Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+  - `feat:` for new features
+  - `fix:` for bug fixes
+  - `docs:` for documentation changes
+  - `chore:` for maintenance tasks
+
+See `CONTRIBUTING.md` for details.
 
 ## 📜 License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License. See `LICENSE` for details.
 
----
+## 📚 Documentation
 
-<div align="center">
-  <sub>Built with ❤️ for open source</sub>
-</div>
+- **[Changelog](CHANGELOG.md)** - Version history and changes
+- **[User Guide](docs/USER_GUIDE.md)** - Detailed usage instructions
