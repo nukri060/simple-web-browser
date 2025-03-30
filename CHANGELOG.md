@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.2.0] - 2025-04-01
+## [1.2.0] - 2025-03-31
 
 ### Added
 - Interactive commands: `!history`, `!save`
