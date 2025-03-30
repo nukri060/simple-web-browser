@@ -160,4 +160,4 @@ MIT License. See `LICENSE` for details.
 ## 📚 Documentation
 
 - **[Changelog](CHANGELOG.md)** - Version history and changes
-- **[User Guide](docs/USER_GUIDE.md)** - Detailed usage instructions
+- **[User Guide](guide.md)** - Detailed usage instructions
