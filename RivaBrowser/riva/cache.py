@@ -14,12 +14,13 @@ class ConnectionCache:
         enable_logging: bool = True
     ):
         """
-        Improved connection cache with thread safety, LRU eviction and metrics
+        Thread-safe connection cache with LRU eviction policy.
         
-        :param timeout: Connection timeout in seconds
-        :param max_pool_size: Maximum number of connections to cache
-        :param enable_metrics: Track cache hits/misses
-        :param enable_logging: Enable debug logging
+        Args:
+            timeout: Connection timeout in seconds
+            max_pool_size: Maximum number of connections to cache
+            enable_metrics: Track cache performance metrics
+            enable_logging: Enable debug logging
         """
         self.cache: OrderedDict[Tuple[str, int, str], Tuple[socket.socket, float]] = OrderedDict()
         self.lock = threading.Lock()
@@ -47,11 +48,12 @@ class ConnectionCache:
         self.cleaner_thread.start()
 
     def _log(self, message: str, level: str = "info"):
+        """Helper for logging"""
         if self.enable_logging:
             getattr(self.logger, level)(message)
 
     def _cleanup_expired(self):
-        """Background thread to periodically clean expired connections"""
+        """Background thread to clean expired connections"""
         while self._cleaner_running:
             time.sleep(self.timeout / 2)
             with self.lock:
@@ -65,9 +67,8 @@ class ConnectionCache:
                     self._log(f"Expired connection removed: {key}")
 
     def _is_connection_alive(self, sock: socket.socket) -> bool:
-        """Enhanced connection health check"""
+        """Check if socket connection is still alive"""
         try:
-            # Test if socket is still writable
             sock.settimeout(0.1)
             sock.send(b'\x00')  # Zero-length test packet
             return True
@@ -76,9 +77,10 @@ class ConnectionCache:
 
     def get(self, host: str, port: int, scheme: str) -> Optional[socket.socket]:
         """
-        Get cached connection if available and alive
+        Get cached connection if available and alive.
         
-        :return: Socket if found and valid, None otherwise
+        Returns:
+            Socket if found and valid, None otherwise
         """
         key = (host, port, scheme)
         
@@ -109,9 +111,10 @@ class ConnectionCache:
 
     def store(self, host: str, port: int, scheme: str, sock: socket.socket) -> bool:
         """
-        Store connection in cache
+        Store connection in cache.
         
-        :return: True if stored successfully, False if rejected
+        Returns:
+            True if stored successfully, False if rejected
         """
         key = (host, port, scheme)
         
@@ -151,6 +154,16 @@ class ConnectionCache:
                 self._log(f"Closed connection for {key}")
             except Exception as e:
                 self._log(f"Error closing socket for {key}: {str(e)}", "error")
+
+    def print_stats(self) -> None:
+        """Print human-readable cache statistics"""
+        stats = self.get_metrics()
+        print("\n=== Connection Cache Statistics ===")
+        print(f"Active connections: {stats['size']}/{stats['max_size']}")
+        print(f"Total hits: {stats['hits']}")
+        print(f"Total misses: {stats['misses']}")
+        print(f"Hit ratio: {stats['hit_ratio']:.1%}")
+        print(f"Evictions: {stats['evictions']}")
 
     def get_metrics(self) -> Dict[str, Union[int, float]]:
         """Get cache performance metrics"""
