@@ -1,177 +1,176 @@
 
 # RivaBrowser Documentation
 
-🌟 **What is RivaBrowser?**
+## 🌟 What's New in v1.2.0?
 
-RivaBrowser is a simple web browser built with Python. Think of it as a bicycle compared to a car - it gets you where you need to go, but with just the essentials.
+- ✨ **Brand new** !history command - see where you've been
+- 💾 **!save** command - keep pages for later
+- 🔑 **HTTP Basic Auth** support (user:pass@site.com)
+- 🌍 Better handling of international websites
+- 📊 **Cache statistics** with !stats
+- 🔍 Improved link extraction with !links
 
-### What can it do?
+## What can it do now?
 
-- Open regular websites (like https://google.com)
-- Show local files on your computer (like file:///home/yourname/notes.txt)
-- Let you see website code (like view-source:https://example.com)
-- Remember connections to make loading faster
+- Open websites (http://, https://)
+- View local files (file://)
+- See website code (view-source:)
+- Handle special content (data:)
+- Remember your browsing history
+- Save pages to your computer
+- Work with password-protected sites
 
-🛠️ **Getting Started**
+## 🛠️ Getting Started
 
 ### Installation
 
-- Make sure you have Python 3.6 or newer
-- Download the project:
-    ```bash
-    git clone https://github.com/nukri060/simple-web-browser.git
-    cd simple-web-browser/RivaBrowser
-    ```
+#### Install directly from GitHub
+```bash
+pip install git+https://github.com/nukri060/simple-web-browser.git
+```
+
+#### Or clone and install locally
+```bash
+git clone https://github.com/nukri060/simple-web-browser.git
+cd simple-web-browser
+pip install -e .
+```
 
 ### Running the Browser
 
-To visit a website:
+#### Basic usage:
 ```bash
 python -m riva "https://example.com"
 ```
 
-To open a local file:
+#### Advanced options:
 ```bash
-python -m riva "file:///home/yourname/document.txt"
+# With custom settings
+python -m riva "https://example.com"   --timeout 10   --user-agent "MyCustomBrowser/1.0"   --log-file browser.log
 ```
 
-📂 **How It Works (Simple Explanation)**
+## 📂 How It Works
 
-### The Three Main Parts:
+### The Enhanced Components:
 
-1. **URL Handler** - Understands web addresses
-   - Knows different types like http://, file://, etc.
-   - Can fetch content from each type
+#### Smart URL Handler (url.py)
 
-2. **Connection Saver** - Makes loading faster
-   - Remembers websites you've visited
-   - Reuses connections when possible
+- New: Understands password-protected sites (user:pass@site.com)
+- Better error handling
+- Supports more website types
 
-3. **Content Cleaner** - Makes pages look nice
-   - Removes messy code tags
-   - Fixes special characters
+#### Supercharged Cache (cache.py)
 
-🧩 **Main Components**
+- Tracks performance (hits/misses)
+- Automatic cleanup
+- Connection health checks
 
-### 1. The Cache (cache.py)
+#### Content Display (utils.py)
 
-This is like a memory box that helps the browser work faster.
+- Improved text cleaning
+- Better link extraction
+- Support for multiple encodings
 
-**What it does:**
-- Keeps connections to websites open for a while
-- Automatically closes old connections
-- Tracks what's working well
+## 🧙‍♂️ Main Components (Updated)
 
-**Example code:**
+### 1. The Cache System
+
+#### New features:
 ```python
+# Get cache statistics
 from riva.cache import connection_cache
+print(connection_cache.get_metrics())
 
-# Get a saved connection
-saved_connection = connection_cache.get("example.com", 443, "https")
-
-# Store a connection for later
-connection_cache.store("example.com", 443, "https", your_connection)
-```
-
-### 2. The URL Processor (url.py)
-
-This is like the browser's address bar - it understands where you want to go.
-
-**Types of addresses it knows:**
-| Type             | Example                    | What It Does                |
-| ---------------- |:--------------------------:| ---------------------------:|
-| Regular Website  | https://example.com         | Gets the webpage             |
-| Local File       | file:///document.txt        | Opens your computer files    |
-| Page Source      | view-source:http://...      | Shows the website's code     |
-| Data             | data:text/html,       | Shows special content       |
-
-**How to use it:**
-```python
-from riva.url import URL
-
-website = URL("https://example.com")
-content = website.request()  # Gets the page
-```
-
-### 3. The Display Helper (utils.py)
-
-This makes websites look nice in your terminal.
-
-**What it does:**
-- `show()` - Cleans up webpage code
-- `load()` - Gets and shows a page in one step
-
-**Example:**
-```python
-from riva.utils import load
-
-load("file:///notes.txt")  # Opens and shows your file
-```
-
-💡 **Common Uses**
-
-### 1. Checking a Website
-```python
-from riva.url import URL
-
-page = URL("https://httpbin.org/get")
-print(page.request()[:200])  # Shows first 200 characters
-```
-
-### 2. Viewing Website Code
-```python
-from riva.utils import load
-
-load("view-source:https://example.com")
-```
-
-### 3. Reading Local Files
-```bash
-python -m riva "file:///home/yourname/notes.txt"
-```
-
-🛠 **For Developers**
-
-### Adding New Features
-
-Want to add support for ftp:// links? Here's how:
-
-- Add to `url.py`:
-```python
-class URL:
-    def _request_ftp(self):
-        # Your code to handle FTP goes here
-```
-
-- Update the allowed schemes:
-```python
-SCHEME_PORTS = {
-    # ... existing schemes ...
-    'ftp': 21  # Add FTP support
+# Sample output:
+{
+  'hits': 5,       # Successful cache uses
+  'misses': 3,     # Cache misses
+  'evictions': 1,  # Removed old connections
+  'size': 2        # Current cached connections
 }
 ```
 
-### Changing Cache Settings
+### 2. URL Processing (New Features)
 
-Want to keep connections longer?
+#### Handling password-protected sites:
 ```python
-# In __init__.py
-connection_cache = ConnectionCache(
-    timeout=60.0,    # Keep connections for 1 minute
-    max_pool_size=10  # Remember up to 10 connections
+from riva.url import URL
+
+# Access protected resource
+protected = URL("http://user:pass@httpbin.org/basic-auth/user/pass")
+content = protected.request()
+```
+
+### 3. Enhanced Display System
+
+#### New commands:
+```python
+from riva.utils import show, print_links
+
+# Show content with max length
+show(very_long_content, max_length=500)
+
+# Extract and display links
+print_links(html_content)  # Shows first 15 links
+```
+
+## 💡 Common Uses (Updated)
+
+### 1. Saving Important Pages
+```bash
+python -m riva "https://example.com"
+[riva] !save  # Creates saved_page.html
+```
+
+### 2. Reviewing Your History
+```bash
+python -m riva --history  # Show all visited sites
+```
+
+### 3. Testing Website Connections
+
+#### With debug output
+```bash
+python -m riva "https://example.com" --verbose
+```
+
+### 4. Extracting All Links
+```bash
+python -m riva "https://example.com"
+[riva] !links  # Show all found links
+```
+
+## 🛠 For Developers
+
+### Adding New Commands
+
+Example: Adding `` command:
+Edit `__main__.py`:
+```python
+if user_input.lower() == '!bookmark':
+    save_to_bookmarks(last_url)
+```
+
+### Modifying Cache Behavior
+```python
+# Custom cache settings
+custom_cache = ConnectionCache(
+    timeout=120.0,      # 2 minute timeout
+    max_pool_size=20,   # Store 20 connections
+    enable_metrics=True # Track performance
 )
 ```
 
-❓ **Need Help?**
+## ❓ Troubleshooting
 
-If something isn't working:
+### Common issues:
 
-- Check you're using Python 3.6+
-- Make sure the URL is correct
-- Try running with just `python -m Riva` first
+- Encoding problems? Try `--verbose` to see details
+- Connection issues? Adjust `--timeout` value
+- Strange behavior? Check `--log-file`
 
-Remember - this is a simple browser. It won't handle complex websites like modern browsers do!
+## 📜 License
 
-📜 **License**
+MIT License - Free to use and modify
 
-Free to use and modify (MIT License)
+## 💡 Tip: Run `python -m riva --version` to check your installed version!

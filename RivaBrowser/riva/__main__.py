@@ -14,6 +14,19 @@ from typing import Optional
 # Initialize colorama
 colorama.init(autoreset=True)
 
+"""
+RivaBrowser Main Module
+
+Handles the browser's command line interface and interactive mode.
+Supports both direct URL access and interactive sessions.
+
+Key Features:
+- Interactive command processing
+- History management
+- Content saving
+- Connection statistics
+"""
+
 class HistoryManager:
     """Improved history tracker with encoding support"""
     def __init__(self, log_file: str = 'riva_history.log'):
