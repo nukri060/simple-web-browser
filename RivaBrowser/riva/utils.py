@@ -14,26 +14,22 @@ class HTMLUtils:
     @staticmethod
     def strip_scripts(html: str) -> str:
         """Remove script and style tags from HTML"""
-        html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.DOTALL)
-        html = re.sub(r'<style\b[^>]*>.*?</style>', '', html, flags=re.DOTALL)
-        html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)  # NEW: Remove comments
+        html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.DOTALL|re.IGNORECASE)
+        html = re.sub(r'<style\b[^>]*>.*?</style>', '', html, flags=re.DOTALL|re.IGNORECASE)
+        html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
         return html
 
     @staticmethod
     def extract_links(html: str) -> List[str]:
         """Extract all href links from HTML with validation"""
-        raw_links = re.findall(r'href=[\'"]?([^\'" >]+)', html)
-        return [link for link in raw_links if link and not link.startswith('#')]  # NEW: Filter invalid links
+        raw_links = re.findall(r'href=[\'"]?([^\'" >]+)', html, flags=re.IGNORECASE)
+        return [
+            link for link in raw_links 
+            if link and not link.startswith(('#', 'javascript:', 'mailto:'))
+        ]
 
 def show(body: Union[str, bytes], max_length: Optional[int] = None) -> None:
-    """
-    Enhanced content display with error handling and formatting
-    
-    Args:
-        body: Content to display (str or bytes)
-        max_length: Optional max characters to show
-    """
-    # NEW: Handle bytes input
+    """Enhanced content display with error handling and formatting"""
     if isinstance(body, bytes):
         try:
             body = body.decode('utf-8')
@@ -44,7 +40,6 @@ def show(body: Union[str, bytes], max_length: Optional[int] = None) -> None:
                 logging.error(f"Decoding failed: {e}")
                 body = "[Binary data]"
 
-    # NEW: Improved error detection
     error_prefixes = (
         "HTTP/", "File not found", "Path is a directory",
         "Permission denied", "Error reading file", "HTTP Error"
@@ -56,13 +51,11 @@ def show(body: Union[str, bytes], max_length: Optional[int] = None) -> None:
         return
     
     try:
-        # Enhanced HTML cleaning
         decoded = unescape(body)
         cleaned = HTMLUtils.strip_scripts(decoded)
-        text_only = re.sub(r'<[^>]*>', ' ', cleaned)  # NEW: Better tag removal
+        text_only = re.sub(r'<[^>]*>', ' ', cleaned)
         text_only = re.sub(r'\s+', ' ', text_only).strip()
         
-        # Apply length limit
         if max_length and len(text_only) > max_length:
             text_only = shorten(text_only, width=max_length, placeholder="...")
             
@@ -75,14 +68,8 @@ def show(body: Union[str, bytes], max_length: Optional[int] = None) -> None:
         print(body[:1000] + ("..." if len(body) > 1000 else ""))
 
 def load(url: Union[str, 'URL'], max_length: Optional[int] = None) -> None:
-    """
-    Enhanced URL loader with error handling
-    
-    Args:
-        url: URL string or URL object
-        max_length: Optional max content length to display
-    """
-    from .url import URL  # Local import to avoid circular imports
+    """Enhanced URL loader with error handling"""
+    from .url import URL
     
     try:
         start_time = datetime.now()
@@ -105,7 +92,7 @@ def print_links(html: str) -> None:
     links = HTMLUtils.extract_links(html)
     if links:
         print(Fore.CYAN + "\nFound links:" + Style.RESET_ALL)
-        for i, link in enumerate(links[:15], 1):  # NEW: Show first 15 links
+        for i, link in enumerate(links[:15], 1):
             print(f"{i}. {link}")
     else:
         print(Fore.YELLOW + "No valid links found in content" + Style.RESET_ALL)

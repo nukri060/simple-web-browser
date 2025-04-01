@@ -2,9 +2,10 @@ import socket
 import ssl
 from urllib.parse import urlparse
 from .cache import connection_cache
-import base64  # NEW
+import base64
 import logging
-from colorama import Fore  # NEW
+from colorama import Fore
+from datetime import datetime
 
 class URL:
     SCHEME_PORTS = {
@@ -15,14 +16,14 @@ class URL:
         'view-source': None
     }
 
-    def __init__(self, url, user_agent=None):  # NEW: user_agent param
+    def __init__(self, url, user_agent=None):
         self.original_url = url
         self.scheme = None
         self.host = None
         self.port = None
         self.path = None
         self.inner_url = None
-        self.user_agent = user_agent or "RivaBrowser/1.0"  # NEW
+        self.user_agent = user_agent or "RivaBrowser/1.0"
         self._parse_url(url)
 
     def _parse_url(self, url):
@@ -52,7 +53,6 @@ class URL:
         self.scheme = "file"
         if url.startswith("file://"):
             self.path = url[7:]
-            # Remove leading slashes for consistency
             while self.path.startswith('/'):
                 self.path = self.path[1:]
         else:
@@ -61,10 +61,12 @@ class URL:
     def _handle_http(self, url):
         """Process http/https URLs"""
         if '@' in url:
-            # Extract auth part
             auth_part, rest = url.split('@', 1)
             self.auth = auth_part
             url = rest
+        
+        if len(url) < 3:
+            raise ValueError("URL too short")
         
         if '/' not in url:
             url += "/"
@@ -98,7 +100,6 @@ class URL:
         return '\\' in url or (len(url) > 1 and url[1] == ':')
     
     def request(self):
-        # Redirecting based on the URL scheme.
         if self.scheme == "view-source":
             return self._request_view_source()
         elif self.scheme in ["http", "https"]:
@@ -111,7 +112,6 @@ class URL:
             raise ValueError("Unsupported scheme: " + self.scheme)
     
     def _request_view_source(self):
-        # Handling requests for 'view-source' URLs by recursively fetching the inner URL.
         if self.inner_url.scheme in ["http", "https"]:
             return self.inner_url._request_http(source_mode=True)
         elif self.inner_url.scheme == "file":
@@ -122,11 +122,9 @@ class URL:
             raise ValueError(f"Unsupported inner scheme: {self.inner_url.scheme}")
     
     def _get_socket(self):
-        # Attempt to retrieve an existing cached socket for reuse, or create a new one.
         sock = connection_cache.get(self.host, self.port, self.scheme)
         
         if sock is None:
-            # Creating a new socket and connecting to the specified host and port.
             sock = socket.socket(
                 family=socket.AF_INET,
                 type=socket.SOCK_STREAM,
@@ -134,7 +132,6 @@ class URL:
             )
             sock.connect((self.host, self.port))
             
-            # Wrapping the socket with SSL if the scheme is 'https'.
             if self.scheme == "https":
                 ctx = ssl.create_default_context()
                 sock = ctx.wrap_socket(sock, server_hostname=self.host)
@@ -144,17 +141,15 @@ class URL:
     def _request_http(self, source_mode=False):
         sock = self._get_socket()
         
-        # NEW: Handle HTTP Basic Auth
         auth_header = ""
-        if "@" in self.host:
-            auth_part, self.host = self.host.split("@", 1)
-            auth_header = f"Authorization: Basic {base64.b64encode(auth_part.encode()).decode()}\r\n"
+        if hasattr(self, 'auth'):
+            auth_header = f"Authorization: Basic {base64.b64encode(self.auth.encode()).decode()}\r\n"
 
         request = f"GET {self.path} HTTP/1.1\r\n"
         request += f"Host: {self.host}\r\n"
         request += "Connection: keep-alive\r\n"
-        request += f"User-Agent: {self.user_agent}\r\n"  # NEW: Dynamic User-Agent
-        request += auth_header  # NEW
+        request += f"User-Agent: {self.user_agent}\r\n"
+        request += auth_header
         request += "\r\n"
         
         try:
@@ -166,7 +161,6 @@ class URL:
         response = sock.makefile("rb", newline="\r\n")
         statusline = response.readline().decode('utf-8')
         
-        # NEW: Colorize HTTP errors
         try:
             version, status, explanation = statusline.split(" ", 2)
             if int(status) >= 400:
@@ -179,7 +173,6 @@ class URL:
         connection_close = False
         response_headers = {}
         
-        # Reading headers until we reach the end of the header section.
         while True:
             line = response.readline().decode('utf-8')
             if line == "\r\n":
@@ -195,7 +188,6 @@ class URL:
                 connection_close = True
 
         if source_mode:
-            # Returning the full response, including the status and headers.
             body = response.read().decode('utf-8', errors='replace')
             if connection_close:
                 sock.close()
@@ -203,11 +195,9 @@ class URL:
                 connection_cache.store(self.host, self.port, self.scheme, sock)
             return f"{statusline}{''.join(f'{k}: {v}\r\n' for k, v in response_headers.items())}\r\n{body}"
         else:
-            # Handling cases for responses without a 'Content-Length' header.
             if content_length is not None:
                 body = response.read(content_length).decode('utf-8', errors='replace')
             else:
-                # Default handling for servers without 'Content-Length' header.
                 body = response.read().decode('utf-8', errors='replace')
                 connection_close = True
             
@@ -219,7 +209,6 @@ class URL:
             return body
     
     def _request_file(self):
-        # Reading and returning the contents of a local file, handling common errors.
         try:
             with open(self.path, 'r', encoding='utf-8') as f:
                 return f.read()
@@ -231,15 +220,12 @@ class URL:
             return f"Permission denied: {self.path}"
         except UnicodeDecodeError:
             try:
-                # Trying to open the file with a different encoding if the first fails.
                 with open(self.path, 'r', encoding='latin-1') as f:
                     return f.read()
             except Exception as e:
                 return f"Error reading file: {str(e)}"
 
     def _request_data(self):
-        # Handling 'data' URLs by returning the raw content after the comma.
         if self.path.startswith("text/html,"):
             return self.path[len("text/html,"):]
-
         return self.path

@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.1] - 2025-04-02
+
+### Improved
+- Case-insensitive HTML tag matching in strip_scripts()
+- Additional URL scheme filtering (javascript:, mailto:)
+- Minimum URL length validation (3+ characters)
+- Cache logging now includes timestamps
+- Better href attribute extraction with IGNORECASE flag
+
 ## [1.2.0] - 2025-03-31
 
 ### Added

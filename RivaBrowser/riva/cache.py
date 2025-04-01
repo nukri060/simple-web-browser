@@ -4,6 +4,7 @@ import threading
 from collections import OrderedDict
 from typing import Dict, Tuple, Optional, Union
 import logging
+from datetime import datetime
 
 class ConnectionCache:
     def __init__(
@@ -13,33 +14,21 @@ class ConnectionCache:
         enable_metrics: bool = True,
         enable_logging: bool = True
     ):
-        """
-        Thread-safe connection cache with LRU eviction policy.
-        
-        Args:
-            timeout: Connection timeout in seconds
-            max_pool_size: Maximum number of connections to cache
-            enable_metrics: Track cache performance metrics
-            enable_logging: Enable debug logging
-        """
         self.cache: OrderedDict[Tuple[str, int, str], Tuple[socket.socket, float]] = OrderedDict()
         self.lock = threading.Lock()
         self.timeout = timeout
         self.max_pool_size = max_pool_size
         
-        # Metrics
         self.enable_metrics = enable_metrics
         self.hits = 0
         self.misses = 0
         self.evictions = 0
         
-        # Logging
         self.logger = logging.getLogger(__name__)
         self.enable_logging = enable_logging
         if enable_logging:
             logging.basicConfig(level=logging.INFO)
         
-        # Background cleaner thread
         self._cleaner_running = True
         self.cleaner_thread = threading.Thread(
             target=self._cleanup_expired,
@@ -50,7 +39,8 @@ class ConnectionCache:
     def _log(self, message: str, level: str = "info"):
         """Helper for logging"""
         if self.enable_logging:
-            getattr(self.logger, level)(message)
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            getattr(self.logger, level)(f"[{timestamp}] {message}")
 
     def _cleanup_expired(self):
         """Background thread to clean expired connections"""
@@ -70,7 +60,7 @@ class ConnectionCache:
         """Check if socket connection is still alive"""
         try:
             sock.settimeout(0.1)
-            sock.send(b'\x00')  # Zero-length test packet
+            sock.send(b'\x00')
             return True
         except (socket.error, OSError, TimeoutError):
             return False
@@ -78,9 +68,6 @@ class ConnectionCache:
     def get(self, host: str, port: int, scheme: str) -> Optional[socket.socket]:
         """
         Get cached connection if available and alive.
-        
-        Returns:
-            Socket if found and valid, None otherwise
         """
         key = (host, port, scheme)
         
@@ -90,14 +77,12 @@ class ConnectionCache:
                 
                 if (time.time() - timestamp < self.timeout and 
                     self._is_connection_alive(sock)):
-                    # Move to end as most recently used
                     self.cache.move_to_end(key)
                     if self.enable_metrics:
                         self.hits += 1
                     self._log(f"Cache hit for {key}")
                     return sock
                 
-                # Connection is stale or dead
                 self._remove_connection(key)
                 if self.enable_metrics:
                     self.misses += 1
@@ -112,23 +97,17 @@ class ConnectionCache:
     def store(self, host: str, port: int, scheme: str, sock: socket.socket) -> bool:
         """
         Store connection in cache.
-        
-        Returns:
-            True if stored successfully, False if rejected
         """
         key = (host, port, scheme)
         
         with self.lock:
-            # Check if connection already exists
             if key in self.cache:
                 self._log(f"Duplicate connection for {key}, replacing")
                 self._remove_connection(key)
             
-            # Enforce max pool size
             if len(self.cache) >= self.max_pool_size:
                 self._remove_oldest()
             
-            # Verify connection is still good before storing
             if not self._is_connection_alive(sock):
                 self._log(f"Connection not alive, not storing {key}", "warning")
                 return False
