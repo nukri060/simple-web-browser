@@ -131,6 +131,27 @@ def print_help() -> None:
     show(Fore.GREEN + "!exit    - Quit browser")
     show(Fore.YELLOW + "\nEnter URL to navigate (http://, file://, view-source:)")
 
+def print_stats() -> None:
+    """Print detailed cache statistics with formatting"""
+    stats = connection_cache.get_stats()
+    
+    show(Fore.CYAN + "\nCache Statistics:")
+    show(Fore.YELLOW + "┌──────────────────────────────────────┐")
+    show(Fore.YELLOW + f"│ Total Requests: {stats['total_requests']:>20} │")
+    show(Fore.YELLOW + f"│ Cache Hits: {stats['cache_hits']:>24} │")
+    show(Fore.YELLOW + f"│ Cache Misses: {stats['cache_misses']:>22} │")
+    show(Fore.YELLOW + f"│ Hit Rate: {stats['hit_rate']:>26.1%} │")
+    show(Fore.YELLOW + f"│ Active Connections: {stats['active_connections']:>16} │")
+    show(Fore.YELLOW + f"│ Max Pool Size: {stats['max_pool_size']:>21} │")
+    show(Fore.YELLOW + "└──────────────────────────────────────┘")
+    
+    if stats['total_requests'] > 0:
+        show(Fore.GREEN + f"\nPerformance Metrics:")
+        show(Fore.YELLOW + f"Average Response Time: {stats['avg_response_time']:.2f} sec")
+        show(Fore.YELLOW + f"Total Data Transferred: {stats['total_bytes'] / 1024:.1f} KB")
+    
+    logging.info("Cache statistics displayed")
+
 def main() -> None:
     args = parse_args()
     
@@ -173,7 +194,7 @@ def main() -> None:
                 
                 history.add(args.url, "SUCCESS")
                 if args.verbose:
-                    connection_cache.print_stats()
+                    print_stats()
             except Exception as e:
                 logging.error(f"Failed to load {args.url}: {e}")
                 show(Fore.RED + f"Error: {str(e)}")
@@ -198,7 +219,7 @@ def main() -> None:
                     continue
                     
                 if user_input.lower() == '!stats':
-                    connection_cache.print_stats()
+                    print_stats()
                     continue
                     
                 if user_input.lower() == '!links':
