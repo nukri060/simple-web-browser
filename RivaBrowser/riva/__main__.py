@@ -152,6 +152,46 @@ def print_stats() -> None:
     
     logging.info("Cache statistics displayed")
 
+def process_url(url: str, user_agent: str) -> tuple[Optional[str], float]:
+    """Process URL and return content with timing"""
+    start_time = time.time()
+    try:
+        url_obj = URL(url, user_agent=user_agent)
+        content = url_obj.request()
+        load_time = time.time() - start_time
+        return content, load_time
+    except Exception as e:
+        logging.error(f"Failed to process URL {url}: {e}")
+        raise
+
+def display_content(content: str, load_time: float) -> None:
+    """Display content with formatting and statistics"""
+    show(Fore.GREEN + "\n[Content Preview]")
+    
+    # Try to detect if content is HTML
+    if content.strip().lower().startswith('<!doctype html') or content.strip().lower().startswith('<html'):
+        # For HTML, show title and first paragraph
+        title_start = content.lower().find('<title>')
+        title_end = content.lower().find('</title>')
+        if title_start != -1 and title_end != -1:
+            title = content[title_start + 7:title_end].strip()
+            show(Fore.CYAN + f"Title: {title}")
+        
+        # Find first paragraph
+        p_start = content.lower().find('<p>')
+        p_end = content.lower().find('</p>')
+        if p_start != -1 and p_end != -1:
+            preview = content[p_start + 3:p_end].strip()
+            show(preview[:500] + ("..." if len(preview) > 500 else ""))
+        else:
+            show(content[:500] + ("..." if len(content) > 500 else ""))
+    else:
+        # For non-HTML content, show first 500 chars
+        show(content[:500] + ("..." if len(content) > 500 else ""))
+    
+    show(Fore.CYAN + f"\nLoaded in {load_time:.2f} sec | "
+         f"Size: {len(content)} bytes")
+
 def main() -> None:
     args = parse_args()
     
@@ -178,20 +218,10 @@ def main() -> None:
         # Direct URL mode
         if args.url:
             try:
-                start_time = time.time()
                 show(Fore.YELLOW + f"\nLoading: {args.url}")
-                
-                url_obj = URL(args.url, user_agent=args.user_agent)
-                content = url_obj.request()
+                content, load_time = process_url(args.url, args.user_agent)
                 last_content = content
-                
-                show(Fore.GREEN + "\n[Content Preview]")
-                show(content[:500] + ("..." if len(content) > 500 else ""))
-                
-                load_time = time.time() - start_time
-                show(Fore.CYAN + f"\nLoaded in {load_time:.2f} sec | "
-                    f"Size: {len(content)} bytes")
-                
+                display_content(content, load_time)
                 history.add(args.url, "SUCCESS")
                 if args.verbose:
                     print_stats()
@@ -248,20 +278,10 @@ def main() -> None:
                     
                 # Process URL
                 try:
-                    start_time = time.time()
                     show(Fore.YELLOW + f"\nLoading: {user_input}")
-                    
-                    url_obj = URL(user_input, user_agent=args.user_agent)
-                    content = url_obj.request()
+                    content, load_time = process_url(user_input, args.user_agent)
                     last_content = content
-                    
-                    show(Fore.GREEN + "\n[Content Preview]")
-                    show(content[:500] + ("..." if len(content) > 500 else ""))
-                    
-                    load_time = time.time() - start_time
-                    show(Fore.CYAN + f"\nLoaded in {load_time:.2f} sec | "
-                        f"Size: {len(content)} bytes")
-                    
+                    display_content(content, load_time)
                     history.add(user_input, "SUCCESS")
                 except Exception as e:
                     logging.error(f"Failed to load {user_input}: {e}")
