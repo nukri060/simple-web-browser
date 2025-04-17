@@ -32,6 +32,19 @@ class HistoryManager:
     def __init__(self, log_file: str = 'riva_history.log'):
         self.history_file = log_file
         self.entries = []
+        self._ensure_history_file()
+        
+    def _ensure_history_file(self) -> None:
+        """Ensure history file exists and is writable"""
+        try:
+            if not os.path.exists(self.history_file):
+                with open(self.history_file, 'w', encoding='utf-8') as f:
+                    f.write("Timestamp | Status | URL\n")
+                    f.write("-" * 80 + "\n")
+            elif not os.access(self.history_file, os.W_OK):
+                logging.warning(f"History file {self.history_file} is not writable")
+        except Exception as e:
+            logging.error(f"Failed to initialize history file: {e}")
         
     def add(self, url: str, status: str) -> None:
         """Add entry to history with error handling"""
@@ -44,12 +57,21 @@ class HistoryManager:
             self.entries.append(entry)
             with open(self.history_file, 'a', encoding='utf-8') as f:
                 f.write(f"{entry['timestamp']} | {status} | {url}\n")
+            logging.info(f"Added history entry: {url} ({status})")
+        except PermissionError:
+            logging.error(f"Permission denied when writing to {self.history_file}")
+            show(Fore.RED + "Warning: Could not save to history (permission denied)")
         except Exception as e:
             logging.error(f"History add failed: {e}")
+            show(Fore.RED + f"Warning: Could not save to history: {str(e)}")
 
     def show_history(self) -> None:
         """Safely display history with encoding fallback"""
         try:
+            if not os.path.exists(self.history_file):
+                show(Fore.YELLOW + "No history found")
+                return
+                
             with open(self.history_file, 'rb') as f:
                 content = f.read()
                 try:
@@ -58,10 +80,13 @@ class HistoryManager:
                     decoded = content.decode('latin-1', errors='replace')
                 show(Fore.MAGENTA + "\nBrowsing History:")
                 show(decoded)
+                logging.info("History displayed successfully")
         except FileNotFoundError:
             show(Fore.YELLOW + "No history found")
+            logging.warning("History file not found")
         except Exception as e:
             show(Fore.RED + f"Error reading history: {str(e)}")
+            logging.error(f"Failed to display history: {e}")
 
 def parse_args():
     """Argument parser with version support"""
