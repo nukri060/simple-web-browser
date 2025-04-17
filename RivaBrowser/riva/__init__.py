@@ -9,7 +9,7 @@ Features:
 - History tracking
 """
 
-__version__ = "1.2.1"  
+__version__ = "1.2.2"  
 __author__ = "Nukri Jijavadze"
 __license__ = "MIT"
 
