@@ -28,6 +28,9 @@ class URL:
 
     def _parse_url(self, url):
         """Main URL parsing dispatcher"""
+        if not url or len(url) < 3:
+            raise ValueError("URL too short")
+            
         if url.startswith("view-source:"):
             self._handle_view_source(url)
         elif url.startswith("data:text/html,"):
@@ -35,6 +38,8 @@ class URL:
         elif self._is_windows_path(url):
             self._handle_file(url)
         else:
+            if "://" not in url and not self._is_windows_path(url):
+                raise ValueError("Invalid URL format: missing scheme")
             self._handle_generic(url)
 
     def _handle_view_source(self, url):
