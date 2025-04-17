@@ -23,7 +23,7 @@ def render_modern_web(url):
     return WebGPU_engine(url)  # Maybe someday?
 ```
 
-## ✨ Features (v1.2.0)
+## ✨ Features (v1.2.2)
 
 - Modern protocol support: HTTP/1.1, HTTPS with SSL/TLS
 - Connection caching for faster loading
@@ -37,7 +37,11 @@ def render_modern_web(url):
 - Automatic encoding detection for international websites
 - Modular architecture for easy extension
 - HTML5 parsing support
-- Cache statistics and performance metrics
+- Smart content preview with title and first paragraph extraction
+- Enhanced cache statistics with detailed performance metrics
+- Improved error handling and user feedback
+- Comprehensive logging system
+- History management with file checks and permissions
 
 ## 🚀 Quick Start
 
@@ -86,10 +90,32 @@ python -m riva --history
 
 While browsing, use these commands:
 
-- `!history` - Show browsing history
+- `!history` - Show browsing history with timestamps
 - `!save` - Save current page to `saved_page.html`
 - `!links` - Extract and display links from current page
-- `!stats` - Show cache statistics
+- `!stats` - Show detailed cache statistics and performance metrics
+- `!clear` - Clear the terminal screen
+- `!help` - Show available commands
+- `!exit` - Quit the browser
+
+## 📊 Cache Statistics
+
+RivaBrowser provides detailed statistics about your browsing session:
+
+```
+┌──────────────────────────────────────┐
+│ Total Requests:                 100  │
+│ Cache Hits:                      75  │
+│ Cache Misses:                    25  │
+│ Hit Rate:                     75.0%  │
+│ Active Connections:              10  │
+│ Max Pool Size:                   20  │
+└──────────────────────────────────────┘
+
+Performance Metrics:
+Average Response Time: 0.45 sec
+Total Data Transferred: 1.2 MB
+```
 
 ## 🏗 Project Structure
 
