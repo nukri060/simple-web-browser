@@ -1,176 +1,160 @@
+# RivaBrowser User Guide
 
-# RivaBrowser Documentation
+## Introduction
 
-## 🌟 What's New in v1.2.0?
+RivaBrowser is a terminal-based web browser implemented in Python that provides a lightweight yet powerful way to browse the web. This guide will walk you through its installation, basic usage, and advanced features.
 
-- ✨ **Brand new** !history command - see where you've been
-- 💾 **!save** command - keep pages for later
-- 🔑 **HTTP Basic Auth** support (user:pass@site.com)
-- 🌍 Better handling of international websites
-- 📊 **Cache statistics** with !stats
-- 🔍 Improved link extraction with !links
+## Installation
 
-## What can it do now?
+### Prerequisites
 
-- Open websites (http://, https://)
-- View local files (file://)
-- See website code (view-source:)
-- Handle special content (data:)
-- Remember your browsing history
-- Save pages to your computer
-- Work with password-protected sites
+- Python 3.7 or higher
+- pip (Python package installer)
 
-## 🛠️ Getting Started
+### Installation Steps
 
-### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/nukri060/simple-web-browser.git
+   ```
 
-#### Install directly from GitHub
-```bash
-pip install git+https://github.com/nukri060/simple-web-browser.git
-```
+2. Navigate to the project directory:
+   ```bash
+   cd simple-web-browser
+   ```
 
-#### Or clone and install locally
-```bash
-git clone https://github.com/nukri060/simple-web-browser.git
-cd simple-web-browser
-pip install -e .
-```
+3. Install the package:
+   ```bash
+   pip install -e .
+   ```
 
-### Running the Browser
+## Basic Usage
 
-#### Basic usage:
+### Opening Web Pages
+
+To browse a website, use the following command:
 ```bash
 python -m riva "https://example.com"
 ```
 
-#### Advanced options:
+The browser supports various URL schemes:
+- HTTP/HTTPS URLs: `https://example.com`
+- Local files: `file:///path/to/file.html`
+- View source: `view-source:https://example.com`
+
+### Command Line Options
+
+RivaBrowser supports several command-line options:
+
 ```bash
-# With custom settings
-python -m riva "https://example.com"   --timeout 10   --user-agent "MyCustomBrowser/1.0"   --log-file browser.log
+python -m riva [URL] [OPTIONS]
+
+Options:
+  --timeout SECONDS     Set request timeout (default: 30)
+  --user-agent STRING  Set custom User-Agent
+  --log-file PATH     Specify log file location
+  --version           Show version information
+  --history           Display browsing history
 ```
 
-## 📂 How It Works
+## Interactive Commands
 
-### The Enhanced Components:
+While browsing, you can use the following interactive commands:
 
-#### Smart URL Handler (url.py)
+| Command    | Description                                |
+|------------|--------------------------------------------|
+| !history   | Display your browsing history              |
+| !save      | Save current page to saved_page.html       |
+| !links     | Show all links on the current page         |
+| !stats     | Display cache and performance statistics   |
+| !clear     | Clear the terminal screen                  |
+| !help      | Show available commands                    |
+| !exit      | Exit the browser                          |
 
-- New: Understands password-protected sites (user:pass@site.com)
-- Better error handling
-- Supports more website types
+## Advanced Features
 
-#### Supercharged Cache (cache.py)
+### Connection Caching
 
-- Tracks performance (hits/misses)
-- Automatic cleanup
-- Connection health checks
+RivaBrowser implements connection caching to improve performance:
+- Maintains a pool of active connections
+- Reuses connections for the same host
+- Automatically manages connection lifecycle
 
-#### Content Display (utils.py)
+### Performance Statistics
 
-- Improved text cleaning
-- Better link extraction
-- Support for multiple encodings
+View detailed statistics about your browsing session using the !stats command:
+```
+Total Requests: 100
+Cache Hits: 75
+Cache Misses: 25
+Hit Rate: 75.0%
+Active Connections: 10
+Max Pool Size: 20
 
-## 🧙‍♂️ Main Components (Updated)
-
-### 1. The Cache System
-
-#### New features:
-```python
-# Get cache statistics
-from riva.cache import connection_cache
-print(connection_cache.get_metrics())
-
-# Sample output:
-{
-  'hits': 5,       # Successful cache uses
-  'misses': 3,     # Cache misses
-  'evictions': 1,  # Removed old connections
-  'size': 2        # Current cached connections
-}
+Performance Metrics:
+- Average Response Time: 0.45 sec
+- Total Data Transferred: 1.2 MB
 ```
 
-### 2. URL Processing (New Features)
+### Error Handling
 
-#### Handling password-protected sites:
-```python
-from riva.url import URL
+RivaBrowser provides clear error messages for common issues:
+- Connection timeouts
+- DNS resolution failures
+- SSL/TLS errors
+- HTTP error codes
 
-# Access protected resource
-protected = URL("http://user:pass@httpbin.org/basic-auth/user/pass")
-content = protected.request()
-```
+## Troubleshooting
 
-### 3. Enhanced Display System
+### Common Issues
 
-#### New commands:
-```python
-from riva.utils import show, print_links
+1. Connection Timeout
+   - Check your internet connection
+   - Try increasing the timeout value: `--timeout 60`
 
-# Show content with max length
-show(very_long_content, max_length=500)
+2. SSL Certificate Errors
+   - Verify the website's SSL certificate is valid
+   - Check your system's CA certificates
 
-# Extract and display links
-print_links(html_content)  # Shows first 15 links
-```
+3. Permission Denied
+   - Ensure you have read/write permissions for log files
+   - Check file system permissions for local file access
 
-## 💡 Common Uses (Updated)
+### Getting Help
 
-### 1. Saving Important Pages
-```bash
-python -m riva "https://example.com"
-[riva] !save  # Creates saved_page.html
-```
+If you encounter issues:
+1. Check the error message in the terminal
+2. Review the log file if logging is enabled
+3. Create an issue on the GitHub repository with:
+   - Error message
+   - Command used
+   - System information
 
-### 2. Reviewing Your History
-```bash
-python -m riva --history  # Show all visited sites
-```
+## Best Practices
 
-### 3. Testing Website Connections
+1. Use appropriate timeouts for your network conditions
+2. Enable logging for debugging
+3. Regularly clear browser history and cache if needed
+4. Use view-source for investigating web pages
+5. Save important pages locally using !save
 
-#### With debug output
-```bash
-python -m riva "https://example.com" --verbose
-```
+## Technical Details
 
-### 4. Extracting All Links
-```bash
-python -m riva "https://example.com"
-[riva] !links  # Show all found links
-```
+### Architecture
 
-## 🛠 For Developers
+RivaBrowser is built with a modular architecture:
+- URL handling and parsing (url.py)
+- Connection management (cache.py)
+- Content display (utils.py)
+- Command-line interface (cli.py)
 
-### Adding New Commands
+### Security Considerations
 
-Example: Adding `` command:
-Edit `__main__.py`:
-```python
-if user_input.lower() == '!bookmark':
-    save_to_bookmarks(last_url)
-```
+- HTTPS connections are verified using system CA certificates
+- Local file access is restricted to readable files
+- User credentials are never stored
+- Temporary files are properly cleaned up
 
-### Modifying Cache Behavior
-```python
-# Custom cache settings
-custom_cache = ConnectionCache(
-    timeout=120.0,      # 2 minute timeout
-    max_pool_size=20,   # Store 20 connections
-    enable_metrics=True # Track performance
-)
-```
+## Contributing
 
-## ❓ Troubleshooting
-
-### Common issues:
-
-- Encoding problems? Try `--verbose` to see details
-- Connection issues? Adjust `--timeout` value
-- Strange behavior? Check `--log-file`
-
-## 📜 License
-
-MIT License - Free to use and modify
-
-## 💡 Tip: Run `python -m riva --version` to check your installed version!
+For development and contribution guidelines, please refer to CONTRIBUTING.md in the repository.
