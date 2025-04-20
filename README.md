@@ -1,57 +1,50 @@
 # RivaBrowser
 
-## From Terminal to Tomorrow: A Browser Engine in Evolution
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://github.com/nukri060/simple-web-browser/actions/workflows/python-package.yml/badge.svg)](https://github.com/nukri060/simple-web-browser/actions)
+[![Code Coverage](https://codecov.io/gh/nukri060/simple-web-browser/branch/main/graph/badge.svg)](https://codecov.io/gh/nukri060/simple-web-browser)
 
-![Protocol visualization demo](assets/protocol-flow.gif)
+A lightweight, terminal-based web browser written in Python, designed for educational purposes and web protocol exploration.
 
-### Where Command Line Meets Browser Innovation
+## ✨ Features
 
-RivaBrowser is a living project that starts as a terminal-based web client but aspires to become a full educational browser platform. It's built for those who believe understanding the web shouldn't require reverse-engineering billion-dollar browsers.
+- **Modern Protocol Support**
+  - HTTP/1.1 and HTTP/2 with automatic protocol detection
+  - SSL/TLS encryption
+  - Connection pooling and caching
+  - ALPN negotiation
 
-## 🚀 Today's Reality
+- **User Experience**
+  - Interactive command interface
+  - Smart content preview
+  - Automatic encoding detection
+  - Comprehensive history management
+  - Detailed performance metrics
 
-```python
-from rivabrowser import request
-
-response = request("https://example.com")  # Returns plain text
-```
-
-## 🔮 Tomorrow's Possibilities?
-
-```python
-def render_modern_web(url):
-    return WebGPU_engine(url)  # Maybe someday?
-```
-
-## ✨ Features (v1.2.2)
-
-- Modern protocol support: HTTP/1.1, HTTPS with SSL/TLS
-- Connection caching for faster loading
-- Interactive commands: `!history`, `!save`, `!links`, `!stats`
-- URL scheme support:
-  - `http://` / `https://`
-  - `file://` (local files)
-  - `view-source:` (view page sources)
+- **URL Scheme Support**
+  - `http://` and `https://`
+  - `file://` for local files
+  - `view-source:` for source viewing
   - `data:` URLs
-- HTTP Basic Authentication (`user:pass@site.com`)
-- Automatic encoding detection for international websites
-- Modular architecture for easy extension
-- HTML5 parsing support
-- Smart content preview with title and first paragraph extraction
-- Enhanced cache statistics with detailed performance metrics
-- Improved error handling and user feedback
-- Comprehensive logging system
-- History management with file checks and permissions
+  - HTTP Basic Authentication
+
+- **Developer Features**
+  - Modular architecture
+  - Type-safe implementation
+  - Comprehensive test coverage
+  - Detailed logging system
+  - Extensible design
 
 ## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Install directly from GitHub
-pip install git+https://github.com/nukri060/simple-web-browser.git
+# Install from PyPI
+pip install rivabrowser
 
-# Or clone and install locally
+# Or install from source
 git clone https://github.com/nukri060/simple-web-browser.git
 cd simple-web-browser
 pip install -e .
@@ -61,129 +54,99 @@ pip install -e .
 
 ```bash
 # Open a website
-python -m riva "https://example.com"
+riva-browser "https://example.com"
 
 # View page source
-python -m riva "view-source:https://example.com"
+riva-browser "view-source:https://example.com"
 
 # Open local file
-python -m riva "file:///path/to/file.html"
+riva-browser "file:///path/to/file.html"
 ```
 
-### Advanced Options
-
-```bash
-# With custom settings
-python -m riva "https://example.com" \
-  --timeout 10 \
-  --user-agent "MyCustomBrowser/1.0" \
-  --log-file browser.log
-
-# Show version
-python -m riva --version
-
-# View browsing history
-python -m riva --history
-```
-
-## 🛠 Interactive Commands
+### Interactive Commands
 
 While browsing, use these commands:
-
-- `!history` - Show browsing history with timestamps
-- `!save` - Save current page to `saved_page.html`
-- `!links` - Extract and display links from current page
-- `!stats` - Show detailed cache statistics and performance metrics
-- `!clear` - Clear the terminal screen
+- `!history` - Show browsing history
+- `!save` - Save current page
+- `!links` - Extract and display links
+- `!stats` - Show cache statistics
+- `!clear` - Clear terminal
 - `!help` - Show available commands
-- `!exit` - Quit the browser
+- `!exit` - Quit browser
 
-## 📊 Cache Statistics
+## 📚 Documentation
 
-RivaBrowser provides detailed statistics about your browsing session:
-
-```
-┌──────────────────────────────────────┐
-│ Total Requests:                 100  │
-│ Cache Hits:                      75  │
-│ Cache Misses:                    25  │
-│ Hit Rate:                     75.0%  │
-│ Active Connections:              10  │
-│ Max Pool Size:                   20  │
-└──────────────────────────────────────┘
-
-Performance Metrics:
-Average Response Time: 0.45 sec
-Total Data Transferred: 1.2 MB
-```
+- **[User Guide](guide.md)** - Detailed usage instructions
+- **[API Reference](docs/api.md)** - Complete API documentation
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+- **[Changelog](CHANGELOG.md)** - Version history
 
 ## 🏗 Project Structure
 
 ```
 RivaBrowser/
 ├── riva/                  # Core package
-│   ├── __init__.py        # Package definition
-│   ├── cache.py           # Connection manager with LRU caching
-│   ├── url.py             # URL parsing/request handling
-│   ├── utils.py           # Content display utilities
-│   └── cli.py             # Command line interface
-├── tests/                 # Unit tests
-├── main.py                # CLI entry point
-└── requirements.txt       # Dependencies
+│   ├── __init__.py       # Package definition
+│   ├── cache.py          # Connection caching
+│   ├── http2.py          # HTTP/2 implementation
+│   ├── url.py            # URL handling
+│   ├── utils.py          # Utilities
+│   └── cli.py            # Command line interface
+├── tests/                # Test suite
+├── docs/                 # Documentation
+├── examples/             # Usage examples
+└── requirements.txt      # Dependencies
 ```
 
-## 🔧 For Developers
+## 🛠 Development
 
-### Extending Functionality
+### Setting Up Development Environment
 
-```python
-from riva import URL
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+.\venv\Scripts\activate   # Windows
 
-class CustomURL(URL):
-    def _handle_custom_scheme(self, url):
-        """Implement custom URL scheme handling"""
-        pass
-```
-
-### Cache Configuration
-
-```python
-from riva.cache import ConnectionCache
-
-# Custom cache settings
-custom_cache = ConnectionCache(
-    timeout=120.0,      # 2 minute timeout
-    max_pool_size=20,   # Store 20 connections
-    enable_metrics=True # Track performance
-)
+# Install development dependencies
+pip install -r requirements-dev.txt
 ```
 
 ### Running Tests
 
 ```bash
-python -m unittest discover tests
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=riva
+
+# Run specific test file
+pytest tests/test_http2.py
 ```
+
+### Code Style
+
+- Follow [PEP 8](https://peps.python.org/pep-0008/)
+- Use type hints for all new code
+- Document all public APIs
+- Write tests for new features
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow our guidelines:
-
-- Follow [PEP 8](https://peps.python.org/pep-0008/) style guidelines
-- Use type hints for all new code
-- Keep functions small and focused
-- Use [Conventional Commits](https://www.conventionalcommits.org/) format:
-  - `feat:` for new features
-  - `fix:` for bug fixes
-  - `docs:` for documentation changes
-  - `chore:` for maintenance tasks
-
-See `CONTRIBUTING.md` for details.
+We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) for details on:
+- How to report bugs
+- How to propose features
+- Code style guidelines
+- Commit message format
+- Pull request process
 
 ## 📜 License
 
-MIT License. See `LICENSE` for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📚 Documentation
+## 🙏 Acknowledgments
 
-- **[Changelog](CHANGELOG.md)** - Version history and changes
-- **[User Guide](guide.md)** - Detailed usage instructions
+- Inspired by educational browser projects
+- Built with Python's standard library
+- Uses [h2](https://github.com/python-hyper/h2) for HTTP/2 support
