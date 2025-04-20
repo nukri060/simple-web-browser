@@ -241,9 +241,12 @@ def process_url(url: str, user_agent: str = "RivaBrowser/1.0") -> tuple[Optional
     try:
         protocol = detect_protocol(url)
         response = make_request(url, protocol)
-        if response:
+        if response and isinstance(response, dict):
             load_time = time.time() - start_time
             return response.get('content', ''), load_time
+        elif response and isinstance(response, str):
+            load_time = time.time() - start_time
+            return response, load_time
         return None, 0.0
     except Exception as e:
         logging.error(f"Error processing URL {url}: {str(e)}")
