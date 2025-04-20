@@ -75,13 +75,13 @@ class HTTP2Connection:
             events = self.h2_conn.receive_data(data)
             
             for event in events:
-                if isinstance(event, h2.events.DataReceived):
+                if hasattr(event, 'stream_id') and hasattr(event, 'data'):
                     self.h2_conn.acknowledge_received_data(
-                        event.flow_controlled_length,
+                        len(event.data),
                         event.stream_id
                     )
                     return event.stream_id, event.data
-                elif isinstance(event, h2.events.StreamEnded):
+                elif hasattr(event, 'stream_id') and isinstance(event, h2.events.StreamEnded):
                     return event.stream_id, None
 
             return self.stream_id, None
