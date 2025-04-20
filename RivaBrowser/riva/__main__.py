@@ -235,14 +235,19 @@ def detect_protocol(url: str) -> str:
         return url.split('://')[0]
     return 'http'  # Default to HTTP
 
-def process_url(url: str) -> Optional[Dict[str, Any]]:
-    """Process URL and return response data"""
+def process_url(url: str, user_agent: str = "RivaBrowser/1.0") -> tuple[Optional[str], float]:
+    """Process URL and return response data with load time"""
+    start_time = time.time()
     try:
         protocol = detect_protocol(url)
-        return make_request(url, protocol)
+        response = make_request(url, protocol)
+        if response:
+            load_time = time.time() - start_time
+            return response.get('content', ''), load_time
+        return None, 0.0
     except Exception as e:
         logging.error(f"Error processing URL {url}: {str(e)}")
-        return None
+        return None, 0.0
 
 def make_request(url: str, protocol: str = 'auto') -> Optional[Dict[str, Any]]:
     """Make HTTP request using appropriate protocol"""
@@ -334,9 +339,9 @@ def main() -> None:
         
     setup_logging(args.log_level)
     
-    response = process_url(args.url)
+    response, load_time = process_url(args.url)
     if response:
-        print(response['content'])
+        print(response)
     else:
         sys.exit(1)
 
