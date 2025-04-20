@@ -230,20 +230,19 @@ def setup_logging(level: str = "INFO") -> None:
     )
 
 def detect_protocol(url: str) -> str:
-    """Detect if server supports HTTP/2"""
+    """Detect protocol from URL"""
+    if url.startswith(('http://', 'https://')):
+        return url.split('://')[0]
+    return 'http'  # Default to HTTP
+
+def process_url(url: str) -> Optional[Dict[str, Any]]:
+    """Process URL and return response data"""
     try:
-        parsed_url = URL(url)
-        if parsed_url.scheme != 'https':
-            return 'http/1.1'
-            
-        # Try HTTP/2 connection
-        conn = HTTP2Connection(parsed_url.host, parsed_url.port)
-        if conn.connect():
-            conn.close()
-            return 'http/2'
-        return 'http/1.1'
-    except Exception:
-        return 'http/1.1'
+        protocol = detect_protocol(url)
+        return make_request(url, protocol)
+    except Exception as e:
+        logging.error(f"Error processing URL {url}: {str(e)}")
+        return None
 
 def make_request(url: str, protocol: str = 'auto') -> Optional[Dict[str, Any]]:
     """Make HTTP request using appropriate protocol"""
@@ -335,7 +334,7 @@ def main() -> None:
         
     setup_logging(args.log_level)
     
-    response = make_request(args.url, args.protocol)
+    response = process_url(args.url)
     if response:
         print(response['content'])
     else:

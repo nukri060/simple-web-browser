@@ -62,7 +62,7 @@ class ConnectionCache:
     def _is_connection_alive(self, conn: Any) -> bool:
         """Check if connection is still alive"""
         try:
-            if isinstance(conn, socket.socket):
+            if hasattr(conn, 'send') and hasattr(conn, 'recv'):  # Socket-like object
                 conn.settimeout(0.1)
                 conn.send(b'\x00')
                 return True

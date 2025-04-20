@@ -38,7 +38,7 @@ class HTTP2Connection:
     def send_request(self, method: str, path: str, headers: Dict[str, str]) -> Optional[int]:
         """Send HTTP/2 request and return stream ID"""
         try:
-            if not self.h2_conn:
+            if not self.h2_conn or not self.conn:
                 if not self.connect():
                     return None
 
@@ -65,10 +65,13 @@ class HTTP2Connection:
     def receive_response(self) -> Tuple[Optional[int], Optional[bytes]]:
         """Receive HTTP/2 response"""
         try:
-            if not self.h2_conn or not self.stream_id:
+            if not self.h2_conn or not self.conn or not self.stream_id:
                 return None, None
 
             data = self.conn.recv(65535)
+            if not data:
+                return None, None
+                
             events = self.h2_conn.receive_data(data)
             
             for event in events:
@@ -81,7 +84,7 @@ class HTTP2Connection:
                 elif isinstance(event, h2.events.StreamEnded):
                     return event.stream_id, None
 
-            return None, None
+            return self.stream_id, None
         except Exception as e:
             self.logger.error(f"Failed to receive HTTP/2 response: {str(e)}")
             return None, None
