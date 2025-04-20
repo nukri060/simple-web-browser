@@ -1,55 +1,89 @@
 # Changelog
 
-## [1.2.2] - 2025-04-17
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.3.0] - 2024-04-17
 
 ### Added
-- Enhanced error handling and logging in HistoryManager
-- Improved cache statistics display with better formatting
-- HTML content detection and smart preview
-- Title extraction from HTML pages
-- First paragraph extraction for better content preview
-- Detailed performance metrics in statistics
-- File existence and permission checks for history
-- Better error messages for users
-
-### Improved
-- History file initialization and management
-- Cache statistics visualization with ASCII art
-- Content display with HTML-aware formatting
-- URL processing with better error handling
-- Logging system with more detailed information
-- User feedback for common errors
-- Code organization and modularity
+- HTTP/2 protocol support with automatic detection
+- Protocol selection via command line (`--protocol` flag)
+- Enhanced connection pooling for HTTP/2
+- Improved connection lifecycle management
+- Detailed logging for protocol detection
+- New dependencies: `h2` and `hyper` for HTTP/2 support
 
 ### Changed
-- Refactored URL processing into separate function
-- Enhanced content display logic
-- Improved statistics collection and display
-- Better error handling throughout the application
-
-## [1.2.1] - 2025-04-02
-
-### Improved
-- Case-insensitive HTML tag matching in strip_scripts()
-- Additional URL scheme filtering (javascript:, mailto:)
-- Minimum URL length validation (3+ characters)
-- Cache logging now includes timestamps
-- Better href attribute extraction with IGNORECASE flag
-
-## [1.2.0] - 2025-03-31
-
-### Added
-- Interactive commands: `!history`, `!save`
-- HTTP Basic Authentication support
-- `--version` command line flag
-- Automatic encoding detection
-
-### Changed
-- Improved URL parsing logic
-- Enhanced error handling system
-- Updated connection caching algorithm
+- Connection cache now supports both HTTP/1.1 and HTTP/2
+- Improved connection reuse efficiency
+- Enhanced error handling for protocol-specific issues
+- Updated documentation with HTTP/2 support details
 
 ### Fixed
-- Unicode handling in history tracking
-- File path handling on Windows
-- SSL certificate verification
+- Connection timeout handling for long-running requests
+- SSL/TLS handshake improvements
+- Memory leaks in connection pool
+
+## [1.2.2] - 2024-04-10
+
+### Added
+- Enhanced cache statistics with detailed performance metrics
+- Improved error handling and user feedback
+- Comprehensive logging system
+- History management with file checks and permissions
+
+### Changed
+- Optimized connection caching algorithm
+- Improved memory usage in cache management
+- Enhanced error messages for better debugging
+
+### Fixed
+- Memory leak in connection pool
+- Race condition in cache cleanup
+- File permission issues in history management
+
+## [1.2.1] - 2024-04-05
+
+### Added
+- HTML5 parsing support
+- Smart content preview with title and first paragraph extraction
+- Enhanced cache statistics
+- Improved error handling
+
+### Changed
+- Updated URL parsing to handle more edge cases
+- Improved content encoding detection
+- Enhanced logging system
+
+### Fixed
+- Fixed encoding issues with international websites
+- Resolved memory leaks in content parsing
+- Fixed cache eviction policy
+
+## [1.2.0] - 2024-04-01
+
+### Added
+- Modern protocol support: HTTP/1.1, HTTPS with SSL/TLS
+- Connection caching for faster loading
+- Interactive commands: `!history`, `!save`, `!links`, `!stats`
+- URL scheme support:
+  - `http://` / `https://`
+  - `file://` (local files)
+  - `view-source:` (view page sources)
+  - `data:` URLs
+- HTTP Basic Authentication (`user:pass@site.com`)
+- Automatic encoding detection for international websites
+- Modular architecture for easy extension
+
+### Changed
+- Complete rewrite of the core engine
+- Improved error handling
+- Enhanced security features
+- Better performance through connection pooling
+
+### Fixed
+- Various security vulnerabilities
+- Memory leaks in connection handling
+- Encoding issues with non-ASCII content

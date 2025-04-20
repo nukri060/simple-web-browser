@@ -2,159 +2,176 @@
 
 ## Introduction
 
-RivaBrowser is a terminal-based web browser implemented in Python that provides a lightweight yet powerful way to browse the web. This guide will walk you through its installation, basic usage, and advanced features.
+RivaBrowser is a lightweight web browser engine that supports both HTTP/1.1 and HTTP/2 protocols. 
+It's designed for developers and power users who need a simple yet powerful web client.
 
 ## Installation
 
-### Prerequisites
+```bash
+# Install from PyPI
+pip install rivabrowser
 
-- Python 3.7 or higher
-- pip (Python package installer)
-
-### Installation Steps
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/nukri060/simple-web-browser.git
-   ```
-
-2. Navigate to the project directory:
-   ```bash
-   cd simple-web-browser
-   ```
-
-3. Install the package:
-   ```bash
-   pip install -e .
-   ```
+# Or install from source
+git clone https://github.com/yourusername/rivabrowser.git
+cd rivabrowser
+pip install -e .
+```
 
 ## Basic Usage
 
-### Opening Web Pages
+### Command Line Interface
 
-To browse a website, use the following command:
 ```bash
+# Open a website
 python -m riva "https://example.com"
+
+# View page source
+python -m riva "view-source:https://example.com"
+
+# Open local file
+python -m riva "file:///path/to/file.html"
 ```
 
-The browser supports various URL schemes:
-- HTTP/HTTPS URLs: `https://example.com`
-- Local files: `file:///path/to/file.html`
-- View source: `view-source:https://example.com`
+### Protocol Selection
 
-### Command Line Options
-
-RivaBrowser supports several command-line options:
+RivaBrowser automatically detects the best protocol to use, but you can force a specific protocol:
 
 ```bash
-python -m riva [URL] [OPTIONS]
+# Force HTTP/2
+python -m riva "https://example.com" --protocol http/2
 
-Options:
-  --timeout SECONDS     Set request timeout (default: 30)
-  --user-agent STRING  Set custom User-Agent
-  --log-file PATH     Specify log file location
-  --version           Show version information
-  --history           Display browsing history
+# Force HTTP/1.1
+python -m riva "https://example.com" --protocol http/1.1
+
+# Auto-detect (default)
+python -m riva "https://example.com" --protocol auto
+```
+
+### Advanced Options
+
+```bash
+# Custom timeout
+python -m riva "https://example.com" --timeout 10
+
+# Custom user agent
+python -m riva "https://example.com" --user-agent "MyCustomBrowser/1.0"
+
+# Log to file
+python -m riva "https://example.com" --log-file browser.log
+
+# Set log level
+python -m riva "https://example.com" --log-level DEBUG
 ```
 
 ## Interactive Commands
 
-While browsing, you can use the following interactive commands:
+While browsing, use these commands:
 
-| Command    | Description                                |
-|------------|--------------------------------------------|
-| !history   | Display your browsing history              |
-| !save      | Save current page to saved_page.html       |
-| !links     | Show all links on the current page         |
-| !stats     | Display cache and performance statistics   |
-| !clear     | Clear the terminal screen                  |
-| !help      | Show available commands                    |
-| !exit      | Exit the browser                          |
+- `!history` - Show browsing history with timestamps
+- `!save` - Save current page to `saved_page.html`
+- `!links` - Extract and display links from current page
+- `!stats` - Show detailed cache statistics and performance metrics
+- `!clear` - Clear the terminal screen
+- `!help` - Show available commands
+- `!exit` - Quit the browser
 
-## Advanced Features
+## HTTP/2 Features
 
-### Connection Caching
+RivaBrowser supports HTTP/2 with the following features:
 
-RivaBrowser implements connection caching to improve performance:
-- Maintains a pool of active connections
-- Reuses connections for the same host
-- Automatically manages connection lifecycle
+- Automatic protocol detection
+- Connection multiplexing
+- Header compression
+- Server push support
+- Stream prioritization
 
-### Performance Statistics
+### Protocol Detection
 
-View detailed statistics about your browsing session using the !stats command:
+RivaBrowser automatically detects if a server supports HTTP/2 using ALPN (Application-Layer Protocol Negotiation).
+If HTTP/2 is not supported, it falls back to HTTP/1.1.
+
+### Performance Optimization
+
+HTTP/2 provides several performance benefits:
+
+- Multiple requests over a single connection
+- Header compression
+- Server push support
+- Stream prioritization
+
+## Cache Management
+
+RivaBrowser includes a sophisticated connection cache:
+
+```python
+from riva import ConnectionCache
+
+# Create custom cache
+cache = ConnectionCache(
+    timeout=30.0,      # Connection timeout in seconds
+    max_pool_size=10,  # Maximum number of cached connections
+    enable_metrics=True # Enable performance metrics
+)
+
+# View cache statistics
+cache.print_stats()
 ```
-Total Requests: 100
-Cache Hits: 75
-Cache Misses: 25
-Hit Rate: 75.0%
-Active Connections: 10
-Max Pool Size: 20
 
-Performance Metrics:
-- Average Response Time: 0.45 sec
-- Total Data Transferred: 1.2 MB
-```
+## Error Handling
 
-### Error Handling
+RivaBrowser provides detailed error information:
 
-RivaBrowser provides clear error messages for common issues:
 - Connection timeouts
-- DNS resolution failures
+- Protocol negotiation failures
 - SSL/TLS errors
-- HTTP error codes
+- Invalid URLs
+- Network errors
+
+## Logging
+
+Enable detailed logging to debug issues:
+
+```bash
+# Set log level
+python -m riva "https://example.com" --log-level DEBUG
+
+# Log to file
+python -m riva "https://example.com" --log-file debug.log
+```
+
+## Security Features
+
+- SSL/TLS support
+- Certificate verification
+- Secure protocol negotiation
+- Connection timeout protection
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. Connection Timeout
-   - Check your internet connection
-   - Try increasing the timeout value: `--timeout 60`
+1. **Protocol Negotiation Failed**
+   - Check if server supports HTTP/2
+   - Try forcing HTTP/1.1 with `--protocol http/1.1`
 
-2. SSL Certificate Errors
-   - Verify the website's SSL certificate is valid
-   - Check your system's CA certificates
+2. **Connection Timeout**
+   - Increase timeout with `--timeout`
+   - Check network connectivity
 
-3. Permission Denied
-   - Ensure you have read/write permissions for log files
-   - Check file system permissions for local file access
+3. **SSL/TLS Errors**
+   - Verify server certificate
+   - Check system time
 
 ### Getting Help
 
-If you encounter issues:
-1. Check the error message in the terminal
-2. Review the log file if logging is enabled
-3. Create an issue on the GitHub repository with:
-   - Error message
-   - Command used
-   - System information
-
-## Best Practices
-
-1. Use appropriate timeouts for your network conditions
-2. Enable logging for debugging
-3. Regularly clear browser history and cache if needed
-4. Use view-source for investigating web pages
-5. Save important pages locally using !save
-
-## Technical Details
-
-### Architecture
-
-RivaBrowser is built with a modular architecture:
-- URL handling and parsing (url.py)
-- Connection management (cache.py)
-- Content display (utils.py)
-- Command-line interface (cli.py)
-
-### Security Considerations
-
-- HTTPS connections are verified using system CA certificates
-- Local file access is restricted to readable files
-- User credentials are never stored
-- Temporary files are properly cleaned up
+- Check the [documentation](https://github.com/yourusername/rivabrowser/wiki)
+- Open an [issue](https://github.com/yourusername/rivabrowser/issues)
+- Join our [Discord](https://discord.gg/your-server)
 
 ## Contributing
 
-For development and contribution guidelines, please refer to CONTRIBUTING.md in the repository.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.

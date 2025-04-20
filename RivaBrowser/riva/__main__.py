@@ -1,4 +1,7 @@
 import os
+import sys
+import subprocess
+import pkg_resources
 import time
 import colorama
 from colorama import Fore, Style
@@ -8,8 +11,8 @@ from .url import URL
 from .cache import connection_cache
 from .utils import show, load, print_links
 import logging
-import sys
-from typing import Optional
+from typing import Optional, Dict, Any
+from .http2 import HTTP2Connection
 
 # Initialize colorama
 colorama.init(autoreset=True)
@@ -88,6 +91,68 @@ class HistoryManager:
             show(Fore.RED + f"Error reading history: {str(e)}")
             logging.error(f"Failed to display history: {e}")
 
+def check_dependencies() -> None:
+    """Check and install required dependencies"""
+    required_packages = {
+        'requests': '2.31.0',
+        'beautifulsoup4': '4.12.0',
+        'urllib3': '2.0.0',
+        'h2': '4.1.0',
+        'hyper': '0.7.0',
+        'pyOpenSSL': '23.3.0',
+        'cryptography': '41.0.0',
+        'colorama': '0.4.6',
+        'rich': '13.7.0',
+        'python-dateutil': '2.8.2',
+        'chardet': '5.2.0',
+        'idna': '3.6'
+    }
+    
+    missing_packages = []
+    outdated_packages = []
+    
+    for package, required_version in required_packages.items():
+        try:
+            installed_version = pkg_resources.get_distribution(package).version
+            if pkg_resources.parse_version(installed_version) < pkg_resources.parse_version(required_version):
+                outdated_packages.append((package, installed_version, required_version))
+        except pkg_resources.DistributionNotFound:
+            missing_packages.append(package)
+    
+    if missing_packages or outdated_packages:
+        print(Fore.YELLOW + "\nRivaBrowser needs to install or update some dependencies:")
+        
+        if missing_packages:
+            print(Fore.CYAN + "\nMissing packages:")
+            for package in missing_packages:
+                print(f"  - {package}")
+        
+        if outdated_packages:
+            print(Fore.CYAN + "\nOutdated packages:")
+            for package, current, required in outdated_packages:
+                print(f"  - {package} (current: {current}, required: {required})")
+        
+        print(Fore.YELLOW + "\nDo you want to install/update these packages? (y/n): ", end='')
+        response = input().lower()
+        
+        if response == 'y':
+            print(Fore.GREEN + "\nInstalling dependencies...")
+            try:
+                for package in missing_packages:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+                
+                for package, _, required in outdated_packages:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", f"{package}>={required}"])
+                
+                print(Fore.GREEN + "\nDependencies installed successfully!")
+                time.sleep(1)  # Give user time to read the message
+            except subprocess.CalledProcessError as e:
+                print(Fore.RED + f"\nError installing dependencies: {str(e)}")
+                sys.exit(1)
+        else:
+            print(Fore.RED + "\nCannot proceed without required dependencies.")
+            sys.exit(1)
+
 def parse_args():
     """Argument parser with version support"""
     parser = argparse.ArgumentParser(
@@ -108,6 +173,11 @@ def parse_args():
     parser.add_argument('--version', action='version', 
                       version='RivaBrowser 1.2',
                       help='Show version and exit')
+    parser.add_argument('--protocol', choices=['auto', 'http/1.1', 'http/2'],
+                      default='auto', help='Force protocol version')
+    parser.add_argument('--log-level', default='INFO',
+                      choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+                      help='Set logging level')
     return parser.parse_args()
 
 def print_header(version: str = "1.2") -> None:
@@ -152,17 +222,68 @@ def print_stats() -> None:
     
     logging.info("Cache statistics displayed")
 
-def process_url(url: str, user_agent: str) -> tuple[Optional[str], float]:
-    """Process URL and return content with timing"""
-    start_time = time.time()
+def setup_logging(level: str = "INFO") -> None:
+    """Configure logging"""
+    logging.basicConfig(
+        level=getattr(logging, level.upper()),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
+def detect_protocol(url: str) -> str:
+    """Detect if server supports HTTP/2"""
     try:
-        url_obj = URL(url, user_agent=user_agent)
-        content = url_obj.request()
-        load_time = time.time() - start_time
-        return content, load_time
+        parsed_url = URL(url)
+        if parsed_url.scheme != 'https':
+            return 'http/1.1'
+            
+        # Try HTTP/2 connection
+        conn = HTTP2Connection(parsed_url.host, parsed_url.port)
+        if conn.connect():
+            conn.close()
+            return 'http/2'
+        return 'http/1.1'
+    except Exception:
+        return 'http/1.1'
+
+def make_request(url: str, protocol: str = 'auto') -> Optional[Dict[str, Any]]:
+    """Make HTTP request using appropriate protocol"""
+    try:
+        parsed_url = URL(url)
+        
+        if protocol == 'auto':
+            protocol = detect_protocol(url)
+            
+        if protocol == 'http/2' and parsed_url.scheme == 'https':
+            conn = HTTP2Connection(parsed_url.host, parsed_url.port)
+            if not conn.connect():
+                raise Exception("Failed to establish HTTP/2 connection")
+                
+            stream_id = conn.send_request(
+                'GET',
+                parsed_url.path,
+                {'user-agent': 'RivaBrowser/1.0'}
+            )
+            
+            if stream_id is None:
+                raise Exception("Failed to send HTTP/2 request")
+                
+            _, data = conn.receive_response()
+            if data is None:
+                raise Exception("No response received")
+                
+            return {
+                'status': 200,
+                'headers': {},
+                'content': data.decode('utf-8', errors='replace'),
+                'protocol': 'http/2'
+            }
+        else:
+            # Fallback to HTTP/1.1
+            return parsed_url.request()
+            
     except Exception as e:
-        logging.error(f"Failed to process URL {url}: {e}")
-        raise
+        logging.error(f"Request failed: {str(e)}")
+        return None
 
 def display_content(content: str, load_time: float) -> None:
     """Display content with formatting and statistics"""
@@ -193,110 +314,32 @@ def display_content(content: str, load_time: float) -> None:
          f"Size: {len(content)} bytes")
 
 def main() -> None:
-    args = parse_args()
+    # Check dependencies first
+    check_dependencies()
     
-    # Configure logging
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
-        filename=args.log_file,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='RivaBrowser - A lightweight web browser')
+    parser.add_argument('url', nargs='?', help='URL to open')
+    parser.add_argument('--protocol', choices=['auto', 'http/1.1', 'http/2'],
+                      default='auto', help='Force protocol version')
+    parser.add_argument('--log-level', default='INFO',
+                      choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+                      help='Set logging level')
+    parser.add_argument('--version', action='version', version='1.3.0')
     
-    history = HistoryManager()
-    print_header()
+    args = parser.parse_args()
     
-    # Set timeout from CLI
-    connection_cache.timeout = args.timeout
-    
-    if args.history:
-        history.show_history()
-        return
-    
-    last_content: Optional[str] = None
-    
-    try:
-        # Direct URL mode
-        if args.url:
-            try:
-                show(Fore.YELLOW + f"\nLoading: {args.url}")
-                content, load_time = process_url(args.url, args.user_agent)
-                last_content = content
-                display_content(content, load_time)
-                history.add(args.url, "SUCCESS")
-                if args.verbose:
-                    print_stats()
-            except Exception as e:
-                logging.error(f"Failed to load {args.url}: {e}")
-                show(Fore.RED + f"Error: {str(e)}")
-                history.add(args.url, f"ERROR: {str(e)}")
-            return
+    if not args.url:
+        parser.print_help()
+        sys.exit(1)
         
-        # Interactive mode
-        while True:
-            try:
-                user_input = input(Fore.BLUE + "\n[riva] " + Style.RESET_ALL).strip()
-                
-                if not user_input:
-                    continue
-                    
-                if user_input.lower() == '!help':
-                    print_help()
-                    continue
-                    
-                if user_input.lower() == '!clear':
-                    os.system('cls' if os.name == 'nt' else 'clear')
-                    print_header()
-                    continue
-                    
-                if user_input.lower() == '!stats':
-                    print_stats()
-                    continue
-                    
-                if user_input.lower() == '!links':
-                    if last_content:
-                        print_links(last_content)
-                    else:
-                        show(Fore.RED + "No page loaded yet!")
-                    continue
-                    
-                if user_input.lower() == '!history':
-                    history.show_history()
-                    continue
-                    
-                if user_input.lower() == '!save':
-                    if last_content:
-                        with open('saved_page.html', 'w', encoding='utf-8') as f:
-                            f.write(last_content)
-                        show(Fore.GREEN + "Page saved to saved_page.html")
-                    else:
-                        show(Fore.RED + "No content to save!")
-                    continue
-                    
-                if user_input.lower() == '!exit':
-                    show(Fore.MAGENTA + "\nGoodbye!")
-                    break
-                    
-                # Process URL
-                try:
-                    show(Fore.YELLOW + f"\nLoading: {user_input}")
-                    content, load_time = process_url(user_input, args.user_agent)
-                    last_content = content
-                    display_content(content, load_time)
-                    history.add(user_input, "SUCCESS")
-                except Exception as e:
-                    logging.error(f"Failed to load {user_input}: {e}")
-                    show(Fore.RED + f"\nError: {str(e)}")
-                    history.add(user_input, f"ERROR: {str(e)}")
-                    show(Fore.YELLOW + "Type !help for available commands")
-                    
-            except KeyboardInterrupt:
-                show(Fore.YELLOW + "\nOperation cancelled")
-                continue
-                
-    finally:
-        connection_cache.close_all()
-        logging.info("Browser session ended")
-        show(Fore.YELLOW + "\nAll connections closed")
+    setup_logging(args.log_level)
+    
+    response = make_request(args.url, args.protocol)
+    if response:
+        print(response['content'])
+    else:
+        sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
