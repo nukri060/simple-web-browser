@@ -51,6 +51,7 @@ class TestHTTP2Connection(unittest.TestCase):
     def test_send_request(self, mock_connect):
         # Setup mock connection
         self.conn.h2_conn = MagicMock()
+        self.conn.conn = MagicMock()  # Add mock for the socket connection
         self.conn.h2_conn.get_next_available_stream_id.return_value = 1
         
         # Test request
