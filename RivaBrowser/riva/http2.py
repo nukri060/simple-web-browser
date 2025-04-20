@@ -52,7 +52,7 @@ class HTTP2Connection:
             for key, value in headers.items():
                 request_headers.append((key.lower(), value))
 
-            # Send request
+            # Get stream ID and send request
             self.stream_id = self.h2_conn.get_next_available_stream_id()
             self.h2_conn.send_headers(self.stream_id, request_headers)
             self.conn.send(self.h2_conn.data_to_send())
