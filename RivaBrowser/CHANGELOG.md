@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Input validation and security checks
   - Enhanced test coverage with new test cases
   - Fixed resource leaks and connection state issues
+  - Added metrics collection and tracking to connection cache
+  - Enhanced CLI module with:
+    - Comprehensive documentation and type hints
+    - Custom exception classes for better error handling
+    - Grouped command-line options for better organization
+    - Additional options for connection settings, browser settings, and history management
+    - Improved input validation and error messages
+    - Comprehensive test suite
 
 - Improved utils module with enhanced functionality
   - Added comprehensive module documentation and type hints
@@ -44,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced request/response handling with better validation
 - Improved cache metrics collection and reporting
 - Enhanced connection validation and error handling
+- Updated cache implementation with better metrics and error handling
+- Improved logging configuration and error reporting
+- Enhanced URL validation and error messages
 
 ### Fixed
 - Fixed potential resource leaks in HTTP/2 connections
@@ -54,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed potential race conditions in connection cache
 - Addressed connection cleanup issues
 - Fixed metrics calculation errors
+- Fixed connection state issues in cache implementation
+- Fixed validation issues in CLI argument parsing
 
 ## [Unreleased]
 
