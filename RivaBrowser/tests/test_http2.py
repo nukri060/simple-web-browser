@@ -64,9 +64,12 @@ class TestHTTP2Connection(unittest.TestCase):
         self.conn.h2_conn.send_headers.assert_called_once()
         self.conn.conn.send.assert_called_once()
 
-    def test_send_request_no_connection(self):
+    @patch('riva.http2.HTTP2Connection.connect')
+    def test_send_request_no_connection(self, mock_connect):
+        mock_connect.return_value = False  # Имитируем неудачное подключение
         stream_id = self.conn.send_request("GET", "/test", {})
         self.assertIsNone(stream_id)
+        mock_connect.assert_called_once()
 
     @patch('riva.http2.HTTP2Connection.connect')
     def test_receive_response(self, mock_connect):
@@ -137,6 +140,7 @@ class TestHTTP2Cache(unittest.TestCase):
         # Store connection
         conn = HTTP2Connection("example.com", 443)
         conn.h2_conn = MagicMock()
+        conn.close = MagicMock()  # Создаем mock для метода close
         self.cache.store("example.com", 443, "https", conn)
         
         # Remove connection
