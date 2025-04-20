@@ -7,12 +7,15 @@ import colorama
 from colorama import Fore, Style
 import argparse
 from datetime import datetime
+from typing import Optional, Dict, Any, Tuple, List
+from pathlib import Path
+import logging
+
 from .url import URL
 from .cache import connection_cache
 from .utils import show, load, print_links
-import logging
-from typing import Optional, Dict, Any
 from .http2 import HTTP2Connection
+from .cli import InvalidURLError, InvalidOptionError
 
 # Initialize colorama
 colorama.init(autoreset=True)
@@ -20,37 +23,90 @@ colorama.init(autoreset=True)
 """
 RivaBrowser Main Module
 
-Handles the browser's command line interface and interactive mode.
-Supports both direct URL access and interactive sessions.
+This module serves as the main entry point for RivaBrowser, providing:
+- Command-line interface and interactive mode
+- URL processing and content display
+- History management and statistics
+- Protocol detection and handling
+- Dependency management
 
-Key Features:
-- Interactive command processing
-- History management
-- Content saving
-- Connection statistics
+Features:
+- Interactive command processing with colorized output
+- Comprehensive history tracking with encoding support
+- Automatic protocol detection (HTTP/1.1, HTTP/2)
+- Content preview and formatting
+- Cache statistics and performance metrics
+- Dependency management and auto-installation
+
+Example usage:
+    python -m riva https://example.com
+    python -m riva --protocol http/2 https://example.com
+    python -m riva --history
 """
 
+class BrowserError(Exception):
+    """Base exception for browser-related errors."""
+    pass
+
+class ProtocolError(BrowserError):
+    """Raised when there's an error with protocol handling."""
+    pass
+
+class ContentError(BrowserError):
+    """Raised when there's an error processing content."""
+    pass
+
 class HistoryManager:
-    """Improved history tracker with encoding support"""
-    def __init__(self, log_file: str = 'riva_history.log'):
+    """
+    Manages browser history with improved error handling and encoding support.
+    
+    Attributes:
+        history_file (str): Path to the history log file
+        entries (List[Dict[str, str]]): List of history entries
+    """
+    
+    def __init__(self, log_file: str = 'riva_history.log') -> None:
+        """
+        Initialize history manager.
+        
+        Args:
+            log_file (str): Path to the history log file
+        """
         self.history_file = log_file
-        self.entries = []
+        self.entries: List[Dict[str, str]] = []
         self._ensure_history_file()
         
     def _ensure_history_file(self) -> None:
-        """Ensure history file exists and is writable"""
+        """
+        Ensure history file exists and is writable.
+        
+        Raises:
+            PermissionError: If the file is not writable
+            OSError: If there's an error creating the file
+        """
         try:
             if not os.path.exists(self.history_file):
                 with open(self.history_file, 'w', encoding='utf-8') as f:
                     f.write("Timestamp | Status | URL\n")
                     f.write("-" * 80 + "\n")
             elif not os.access(self.history_file, os.W_OK):
-                logging.warning(f"History file {self.history_file} is not writable")
+                raise PermissionError(f"History file {self.history_file} is not writable")
         except Exception as e:
             logging.error(f"Failed to initialize history file: {e}")
+            raise
         
     def add(self, url: str, status: str) -> None:
-        """Add entry to history with error handling"""
+        """
+        Add entry to history with error handling.
+        
+        Args:
+            url (str): The URL to add to history
+            status (str): The status of the request
+            
+        Raises:
+            PermissionError: If the file is not writable
+            OSError: If there's an error writing to the file
+        """
         try:
             entry = {
                 'timestamp': datetime.now().isoformat(),
@@ -64,12 +120,20 @@ class HistoryManager:
         except PermissionError:
             logging.error(f"Permission denied when writing to {self.history_file}")
             show(Fore.RED + "Warning: Could not save to history (permission denied)")
+            raise
         except Exception as e:
             logging.error(f"History add failed: {e}")
             show(Fore.RED + f"Warning: Could not save to history: {str(e)}")
+            raise
 
     def show_history(self) -> None:
-        """Safely display history with encoding fallback"""
+        """
+        Safely display history with encoding fallback.
+        
+        Raises:
+            FileNotFoundError: If the history file doesn't exist
+            OSError: If there's an error reading the file
+        """
         try:
             if not os.path.exists(self.history_file):
                 show(Fore.YELLOW + "No history found")
@@ -87,12 +151,25 @@ class HistoryManager:
         except FileNotFoundError:
             show(Fore.YELLOW + "No history found")
             logging.warning("History file not found")
+            raise
         except Exception as e:
             show(Fore.RED + f"Error reading history: {str(e)}")
             logging.error(f"Failed to display history: {e}")
+            raise
 
 def check_dependencies() -> None:
-    """Check and install required dependencies"""
+    """
+    Check and install required dependencies.
+    
+    This function:
+    1. Checks for required packages and versions
+    2. Prompts user to install missing/outdated packages
+    3. Handles installation errors gracefully
+    
+    Raises:
+        subprocess.CalledProcessError: If package installation fails
+        ImportError: If critical dependencies are missing
+    """
     required_packages = {
         'requests': '2.31.0',
         'beautifulsoup4': '4.12.0',
@@ -108,8 +185,8 @@ def check_dependencies() -> None:
         'idna': '3.6'
     }
     
-    missing_packages = []
-    outdated_packages = []
+    missing_packages: List[str] = []
+    outdated_packages: List[Tuple[str, str, str]] = []
     
     for package, required_version in required_packages.items():
         try:
@@ -148,7 +225,7 @@ def check_dependencies() -> None:
                 time.sleep(1)  # Give user time to read the message
             except subprocess.CalledProcessError as e:
                 print(Fore.RED + f"\nError installing dependencies: {str(e)}")
-                sys.exit(1)
+                raise
         else:
             print(Fore.RED + "\nCannot proceed without required dependencies.")
             sys.exit(1)
@@ -253,7 +330,20 @@ def process_url(url: str, user_agent: str = "RivaBrowser/1.0") -> tuple[Optional
         return None, 0.0
 
 def make_request(url: str, protocol: str = 'auto') -> Optional[Dict[str, Any]]:
-    """Make HTTP request using appropriate protocol"""
+    """
+    Make HTTP request using appropriate protocol.
+    
+    Args:
+        url (str): The URL to request
+        protocol (str): The protocol to use ('auto', 'http/1.1', 'http/2')
+        
+    Returns:
+        Optional[Dict[str, Any]]: Response data or None if request fails
+        
+    Raises:
+        ProtocolError: If there's an error with protocol handling
+        InvalidURLError: If the URL is invalid
+    """
     try:
         parsed_url = URL(url)
         
@@ -263,7 +353,7 @@ def make_request(url: str, protocol: str = 'auto') -> Optional[Dict[str, Any]]:
         if protocol == 'http/2' and parsed_url.scheme == 'https':
             conn = HTTP2Connection(parsed_url.host, parsed_url.port)
             if not conn.connect():
-                raise Exception("Failed to establish HTTP/2 connection")
+                raise ProtocolError("Failed to establish HTTP/2 connection")
                 
             stream_id = conn.send_request(
                 'GET',
@@ -272,11 +362,11 @@ def make_request(url: str, protocol: str = 'auto') -> Optional[Dict[str, Any]]:
             )
             
             if stream_id is None:
-                raise Exception("Failed to send HTTP/2 request")
+                raise ProtocolError("Failed to send HTTP/2 request")
                 
             _, data = conn.receive_response()
             if data is None:
-                raise Exception("No response received")
+                raise ProtocolError("No response received")
                 
             return {
                 'status': 200,
@@ -290,62 +380,93 @@ def make_request(url: str, protocol: str = 'auto') -> Optional[Dict[str, Any]]:
             
     except Exception as e:
         logging.error(f"Request failed: {str(e)}")
-        return None
+        raise ProtocolError(f"Request failed: {str(e)}")
 
 def display_content(content: str, load_time: float) -> None:
-    """Display content with formatting and statistics"""
-    show(Fore.GREEN + "\n[Content Preview]")
+    """
+    Display content with formatting and statistics.
     
-    # Try to detect if content is HTML
-    if content.strip().lower().startswith('<!doctype html') or content.strip().lower().startswith('<html'):
-        # For HTML, show title and first paragraph
-        title_start = content.lower().find('<title>')
-        title_end = content.lower().find('</title>')
-        if title_start != -1 and title_end != -1:
-            title = content[title_start + 7:title_end].strip()
-            show(Fore.CYAN + f"Title: {title}")
+    Args:
+        content (str): The content to display
+        load_time (float): Time taken to load the content
         
-        # Find first paragraph
-        p_start = content.lower().find('<p>')
-        p_end = content.lower().find('</p>')
-        if p_start != -1 and p_end != -1:
-            preview = content[p_start + 3:p_end].strip()
-            show(preview[:500] + ("..." if len(preview) > 500 else ""))
+    Raises:
+        ContentError: If there's an error processing the content
+    """
+    try:
+        show(Fore.GREEN + "\n[Content Preview]")
+        
+        # Try to detect if content is HTML
+        if content.strip().lower().startswith('<!doctype html') or content.strip().lower().startswith('<html'):
+            # For HTML, show title and first paragraph
+            title_start = content.lower().find('<title>')
+            title_end = content.lower().find('</title>')
+            if title_start != -1 and title_end != -1:
+                title = content[title_start + 7:title_end].strip()
+                show(Fore.CYAN + f"Title: {title}")
+            
+            # Find first paragraph
+            p_start = content.lower().find('<p>')
+            p_end = content.lower().find('</p>')
+            if p_start != -1 and p_end != -1:
+                preview = content[p_start + 3:p_end].strip()
+                show(preview[:500] + ("..." if len(preview) > 500 else ""))
+            else:
+                show(content[:500] + ("..." if len(content) > 500 else ""))
         else:
+            # For non-HTML content, show first 500 chars
             show(content[:500] + ("..." if len(content) > 500 else ""))
-    else:
-        # For non-HTML content, show first 500 chars
-        show(content[:500] + ("..." if len(content) > 500 else ""))
-    
-    show(Fore.CYAN + f"\nLoaded in {load_time:.2f} sec | "
-         f"Size: {len(content)} bytes")
+        
+        show(Fore.CYAN + f"\nLoaded in {load_time:.2f} sec | "
+             f"Size: {len(content)} bytes")
+    except Exception as e:
+        raise ContentError(f"Error displaying content: {str(e)}")
 
 def main() -> None:
-    # Check dependencies first
-    check_dependencies()
+    """
+    Main entry point for RivaBrowser.
     
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description='RivaBrowser - A lightweight web browser')
-    parser.add_argument('url', nargs='?', help='URL to open')
-    parser.add_argument('--protocol', choices=['auto', 'http/1.1', 'http/2'],
-                      default='auto', help='Force protocol version')
-    parser.add_argument('--log-level', default='INFO',
-                      choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-                      help='Set logging level')
-    parser.add_argument('--version', action='version', version='1.3.0')
+    This function:
+    1. Checks dependencies
+    2. Parses command-line arguments
+    3. Sets up logging
+    4. Processes the URL
+    5. Displays content
     
-    args = parser.parse_args()
-    
-    if not args.url:
-        parser.print_help()
-        sys.exit(1)
+    Raises:
+        BrowserError: If there's an error in the main execution flow
+    """
+    try:
+        # Check dependencies first
+        check_dependencies()
         
-    setup_logging(args.log_level)
-    
-    response, load_time = process_url(args.url)
-    if response:
-        print(response)
-    else:
+        # Parse command line arguments
+        parser = argparse.ArgumentParser(description='RivaBrowser - A lightweight web browser')
+        parser.add_argument('url', nargs='?', help='URL to open')
+        parser.add_argument('--protocol', choices=['auto', 'http/1.1', 'http/2'],
+                          default='auto', help='Force protocol version')
+        parser.add_argument('--log-level', default='INFO',
+                          choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+                          help='Set logging level')
+        parser.add_argument('--version', action='version', version='1.3.0')
+        
+        args = parser.parse_args()
+        
+        if not args.url:
+            parser.print_help()
+            sys.exit(1)
+            
+        setup_logging(args.log_level)
+        
+        response, load_time = process_url(args.url)
+        if response:
+            display_content(response, load_time)
+        else:
+            raise BrowserError("Failed to process URL")
+            
+    except Exception as e:
+        logging.error(f"Error in main execution: {str(e)}")
+        print(Fore.RED + f"Error: {str(e)}")
         sys.exit(1)
 
 if __name__ == '__main__':

@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Additional options for connection settings, browser settings, and history management
     - Improved input validation and error messages
     - Comprehensive test suite
+  - Enhanced main module with:
+    - Comprehensive documentation and type hints
+    - Custom exception hierarchy (BrowserError, ProtocolError, ContentError)
+    - Improved history management with better error handling
+    - Enhanced protocol detection and handling
+    - Better content display and formatting
+    - Comprehensive test suite
+    - Improved dependency management
 
 - Improved utils module with enhanced functionality
   - Added comprehensive module documentation and type hints
@@ -55,6 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated cache implementation with better metrics and error handling
 - Improved logging configuration and error reporting
 - Enhanced URL validation and error messages
+- Improved history management with better error handling
+- Enhanced protocol detection and handling
+- Improved content display and formatting
 
 ### Fixed
 - Fixed potential resource leaks in HTTP/2 connections
@@ -67,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed metrics calculation errors
 - Fixed connection state issues in cache implementation
 - Fixed validation issues in CLI argument parsing
+- Fixed history file permission issues
+- Fixed content display encoding issues
+- Fixed protocol detection edge cases
 
 ## [Unreleased]
 
