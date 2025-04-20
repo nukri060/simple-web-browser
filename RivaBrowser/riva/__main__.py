@@ -1,7 +1,7 @@
 import os
 import sys
 import subprocess
-import pkg_resources
+import importlib.metadata
 import time
 import colorama
 from colorama import Fore, Style
@@ -113,10 +113,10 @@ def check_dependencies() -> None:
     
     for package, required_version in required_packages.items():
         try:
-            installed_version = pkg_resources.get_distribution(package).version
-            if pkg_resources.parse_version(installed_version) < pkg_resources.parse_version(required_version):
+            installed_version = importlib.metadata.version(package)
+            if importlib.metadata.version(package) < required_version:
                 outdated_packages.append((package, installed_version, required_version))
-        except pkg_resources.DistributionNotFound:
+        except importlib.metadata.PackageNotFoundError:
             missing_packages.append(package)
     
     if missing_packages or outdated_packages:
