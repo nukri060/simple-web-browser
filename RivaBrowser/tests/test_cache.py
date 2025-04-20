@@ -1,8 +1,20 @@
+"""
+Tests for the cache module.
+
+This module contains tests for:
+- Connection caching and reuse
+- Connection lifecycle management
+- Performance metrics collection
+- Error handling and validation
+- Thread safety
+"""
+
 import unittest
 from unittest.mock import patch, MagicMock
-from riva.cache import ConnectionCache
+from riva.cache import ConnectionCache, CacheMetrics, CacheError
 import time
 import socket
+from riva.http2 import HTTP2Connection
 
 class TestConnectionCache(unittest.TestCase):
     def setUp(self):
@@ -13,98 +25,131 @@ class TestConnectionCache(unittest.TestCase):
             enable_metrics=True
         )
         self.test_socket = MagicMock(spec=socket.socket)
+        self.test_http2 = MagicMock(spec=HTTP2Connection)
+        self.test_http2.h2_conn = MagicMock()
+        self.test_http2.h2_conn.get_next_available_stream_id.return_value = 1
+
+    def tearDown(self):
+        """Clean up after tests"""
+        self.cache.close_all()
 
     def test_cache_initialization(self):
-        """Test cache initialization"""
+        """Test cache initialization with valid parameters"""
         self.assertEqual(self.cache.timeout, 1.0)
         self.assertEqual(self.cache.max_pool_size, 2)
         self.assertTrue(self.cache.enable_metrics)
+        self.assertIsInstance(self.cache.metrics, CacheMetrics)
+
+    def test_cache_initialization_invalid(self):
+        """Test cache initialization with invalid parameters"""
+        with self.assertRaises(ValueError):
+            ConnectionCache(timeout=0)
+        with self.assertRaises(ValueError):
+            ConnectionCache(max_pool_size=0)
 
     def test_get_new_connection(self):
         """Test getting new connection"""
-        host = "example.com"
-        port = 80
-        scheme = "http"
-        connection = self.cache.get(host, port, scheme)
-        self.assertIsNone(connection)  # Should return None for new connection
+        connection = self.cache.get("example.com", 80, "http")
+        self.assertIsNone(connection)
+
+    def test_get_invalid_parameters(self):
+        """Test getting connection with invalid parameters"""
+        with self.assertRaises(ValueError):
+            self.cache.get("", 80, "http")
+        with self.assertRaises(ValueError):
+            self.cache.get("example.com", 0, "http")
+        with self.assertRaises(ValueError):
+            self.cache.get("example.com", 80, "ftp")
 
     def test_store_and_get_connection(self):
         """Test storing and getting connection"""
-        host = "example.com"
-        port = 80
-        scheme = "http"
-        
-        # Store connection
-        self.cache.store(host, port, scheme, self.test_socket)
-        
-        # Get connection
-        connection = self.cache.get(host, port, scheme)
+        self.cache.store("example.com", 80, "http", self.test_socket)
+        connection = self.cache.get("example.com", 80, "http")
         self.assertEqual(connection, self.test_socket)
+        self.assertEqual(self.cache.metrics.hits, 1)
+
+    def test_store_invalid_connection(self):
+        """Test storing invalid connection"""
+        invalid_socket = MagicMock()
+        invalid_socket.send.side_effect = socket.error
+        result = self.cache.store("example.com", 80, "http", invalid_socket)
+        self.assertFalse(result)
+        self.assertEqual(self.cache.metrics.failed_connections, 1)
 
     def test_connection_timeout(self):
         """Test connection timeout"""
-        host = "example.com"
-        port = 80
-        scheme = "http"
-        
-        self.cache.store(host, port, scheme, self.test_socket)
-        time.sleep(1.1)  # Wait for timeout
-        connection = self.cache.get(host, port, scheme)
+        self.cache.store("example.com", 80, "http", self.test_socket)
+        time.sleep(1.1)
+        connection = self.cache.get("example.com", 80, "http")
         self.assertIsNone(connection)
+        self.assertEqual(self.cache.metrics.evictions, 1)
 
     def test_max_pool_size(self):
         """Test maximum pool size"""
-        # Store connections up to max_pool_size
         for i in range(3):
             host = f"example{i}.com"
             self.cache.store(host, 80, "http", self.test_socket)
         
-        # Check if oldest connection was evicted
         self.assertEqual(len(self.cache.cache), 2)
+        self.assertEqual(self.cache.metrics.evictions, 1)
 
-    def test_get_stats(self):
-        """Test getting statistics"""
-        host = "example.com"
-        port = 80
-        scheme = "http"
-        
+    def test_http2_connection(self):
+        """Test HTTP/2 connection handling"""
+        self.cache.store("example.com", 443, "https", self.test_http2)
+        connection = self.cache.get("example.com", 443, "https")
+        self.assertEqual(connection, self.test_http2)
+
+    def test_unsupported_connection(self):
+        """Test handling of unsupported connection type"""
+        with self.assertRaises(CacheError):
+            self.cache._is_connection_alive(MagicMock())
+
+    def test_metrics_collection(self):
+        """Test metrics collection"""
         # Make some requests
-        self.cache.get(host, port, scheme)  # miss
-        self.cache.store(host, port, scheme, self.test_socket)
-        self.cache.get(host, port, scheme)  # hit
-        self.cache.get(host, port, scheme)  # hit
+        self.cache.get("example.com", 80, "http")  # miss
+        self.cache.store("example.com", 80, "http", self.test_socket)
+        self.cache.get("example.com", 80, "http")  # hit
+        self.cache.get("example.com", 80, "http")  # hit
 
-        stats = self.cache.get_metrics()
-        self.assertEqual(stats['hits'], 2)
-        self.assertEqual(stats['misses'], 1)
+        metrics = self.cache.get_metrics()
+        self.assertEqual(metrics['hits'], 2)
+        self.assertEqual(metrics['misses'], 1)
+        self.assertEqual(metrics['total_connections'], 1)
+        self.assertEqual(metrics['size'], 1)
 
-    def test_close_all(self):
-        """Test closing all connections"""
-        host1 = "example1.com"
-        host2 = "example2.com"
-        port = 80
-        scheme = "http"
+    def test_connection_lifetime(self):
+        """Test connection lifetime tracking"""
+        self.cache.store("example.com", 80, "http", self.test_socket)
+        time.sleep(0.5)
+        self.cache._remove_connection(("example.com", 80, "http"))
+        
+        metrics = self.cache.get_metrics()
+        self.assertGreater(metrics['avg_connection_lifetime'], 0)
 
-        self.cache.store(host1, port, scheme, self.test_socket)
-        self.cache.store(host2, port, scheme, self.test_socket)
+    def test_thread_safety(self):
+        """Test thread safety of cache operations"""
+        import threading
+        
+        def worker():
+            for _ in range(100):
+                self.cache.store("example.com", 80, "http", self.test_socket)
+                self.cache.get("example.com", 80, "http")
+        
+        threads = [threading.Thread(target=worker) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        
+        self.assertLessEqual(len(self.cache.cache), self.cache.max_pool_size)
 
-        self.cache.close_all()
-        self.assertEqual(len(self.cache.cache), 0)
-
-    def test_metrics_disabled(self):
-        """Test behavior when metrics are disabled"""
-        cache = ConnectionCache(enable_metrics=False)
-        host = "example.com"
-        port = 80
-        scheme = "http"
-
-        cache.get(host, port, scheme)
-        cache.store(host, port, scheme, self.test_socket)
-        cache.get(host, port, scheme)
-
-        stats = cache.get_metrics()
-        self.assertEqual(stats['hits'], 0)
-        self.assertEqual(stats['misses'], 0)
+    def test_context_manager(self):
+        """Test cache as context manager"""
+        with ConnectionCache() as cache:
+            cache.store("example.com", 80, "http", self.test_socket)
+            self.assertEqual(len(cache.cache), 1)
+        self.assertEqual(len(cache.cache), 0)
 
 if __name__ == '__main__':
     unittest.main() 

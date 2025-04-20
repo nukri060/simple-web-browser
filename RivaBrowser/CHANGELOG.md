@@ -27,10 +27,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added doctest support for documentation examples
   - Improved test coverage with new test cases
 
+- Enhanced connection caching implementation
+  - Added comprehensive module documentation and type hints
+  - Introduced CacheMetrics dataclass for structured metrics
+  - Improved connection lifecycle management
+  - Enhanced error handling and validation
+  - Added support for connection lifetime tracking
+  - Improved thread safety with better locking
+  - Added context manager support
+  - Enhanced test coverage with new test cases
+  - Fixed potential resource leaks
+
 ### Changed
 - Updated error handling in HTTP/2 implementation
 - Improved connection cleanup and resource management
 - Enhanced request/response handling with better validation
+- Improved cache metrics collection and reporting
+- Enhanced connection validation and error handling
 
 ### Fixed
 - Fixed potential resource leaks in HTTP/2 connections
@@ -38,6 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed improper handling of pseudo-headers
 - Improved error handling in HTML processing
 - Fixed URL resolution issues with relative links
+- Fixed potential race conditions in connection cache
+- Addressed connection cleanup issues
+- Fixed metrics calculation errors
 
 ## [Unreleased]
 
