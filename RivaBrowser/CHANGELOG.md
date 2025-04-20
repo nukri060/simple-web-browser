@@ -8,6 +8,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Enhanced HTTP/2 implementation with improved error handling and type safety
+  - Comprehensive documentation and type hints
+  - Custom exception hierarchy for better error handling
+  - Context managers for connection management
+  - Improved SSL/TLS configuration and ALPN negotiation
+  - Input validation and security checks
+  - Enhanced test coverage with new test cases
+  - Fixed resource leaks and connection state issues
+
+- Improved utils module with enhanced functionality
+  - Added comprehensive module documentation and type hints
+  - Introduced LinkInfo dataclass for structured link data
+  - Enhanced HTML processing with sanitization and link extraction
+  - Improved error handling and logging throughout
+  - Added support for relative URL resolution with base URLs
+  - Enhanced content display with better formatting and error handling
+  - Added doctest support for documentation examples
+  - Improved test coverage with new test cases
+
+### Changed
+- Updated error handling in HTTP/2 implementation
+- Improved connection cleanup and resource management
+- Enhanced request/response handling with better validation
+
+### Fixed
+- Fixed potential resource leaks in HTTP/2 connections
+- Addressed missing protocol verifications
+- Fixed improper handling of pseudo-headers
+- Improved error handling in HTML processing
+- Fixed URL resolution issues with relative links
+
+## [Unreleased]
+
+### Added
 - Comprehensive documentation for HTTP/2 module
 - Type hints and dataclasses for better type safety
 - Custom exception hierarchy for HTTP/2 errors
